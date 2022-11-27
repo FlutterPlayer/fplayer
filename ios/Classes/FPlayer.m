@@ -31,7 +31,7 @@
 #import <libkern/OSAtomic.h>
 #import <stdatomic.h>
 
-@interface FijkPlugin ()
+@interface FplayerPlugin ()
 
 - (void)onPlayingChange:(int)delta;
 - (void)onPlayableChange:(int)delta;
@@ -41,10 +41,10 @@
 
 static atomic_int atomicId = 0;
 
-@implementation FijkPlayer {
+@implementation FPlayer {
     IJKFFMediaPlayer *_ijkMediaPlayer;
 
-    FijkQueuingEventSink *_eventSink;
+    FQueuingEventSink *_eventSink;
     FlutterMethodChannel *_methodChannel;
     FlutterEventChannel *_eventChannel;
 
@@ -58,7 +58,7 @@ static atomic_int atomicId = 0;
     int _height;
     int _rotate;
 
-    FijkHostOption *_hostOption;
+    FHostOption *_hostOption;
     int _state;
     int _pid;
     int64_t _vid;
@@ -97,13 +97,13 @@ static int renderType = 0;
         int pid = atomic_fetch_add(&atomicId, 1);
         _playerId = @(pid);
         _pid = pid;
-        _eventSink = [[FijkQueuingEventSink alloc] init];
+        _eventSink = [[FQueuingEventSink alloc] init];
         _latestPixelBuffer = nil;
         _vid = -1;
         _rotate = -1;
         _state = 0;
 
-        _hostOption = [[FijkHostOption alloc] init];
+        _hostOption = [[FHostOption alloc] init];
         _lastBuffer = nil;
         if (renderType == 0) {
             _ijkMediaPlayer = [[IJKFFMediaPlayer alloc] init];
@@ -266,7 +266,7 @@ static int renderType = 0;
 }
 
 - (void)onStateChangedWithNew:(int)newState andOld:(int)oldState {
-    FijkPlugin *plugin = [FijkPlugin singleInstance];
+    FplayerPlugin *plugin = [FplayerPlugin singleInstance];
     if (plugin == nil)
         return;
     if (newState == started && oldState != started) {

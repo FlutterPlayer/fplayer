@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 #define FIJK_HOST_OPTION_ENABLE_SNAPSHOT  @"enable-snapshot"
 
 
-@interface FijkHostOption : NSObject
+@interface FHostOption : NSObject
 
 - (void)setIntValue:(NSNumber *)value forKey:(NSString *)key;
 

@@ -22,7 +22,7 @@
 
 #import "FHostOption.h"
 
-@implementation FijkHostOption {
+@implementation FHostOption {
     NSMutableDictionary<NSString *, NSNumber *> *_intOption;
 
     NSMutableDictionary<NSString *, NSString *> *_strOption;

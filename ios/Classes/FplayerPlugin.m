@@ -36,11 +36,11 @@ typedef NS_ENUM(int, FijkVoUIMode) {
     alwaysShowUI,
 };
 
-@implementation FijkPlugin {
+@implementation FplayerPlugin {
     NSObject<FlutterPluginRegistrar> *_registrar;
-    NSMutableDictionary<NSNumber *, FijkPlayer *> *_fijkPlayers;
+    NSMutableDictionary<NSNumber *, FPlayer *> *_fPlayers;
 
-    FijkQueuingEventSink *_eventSink;
+    FQueuingEventSink *_eventSink;
     FlutterEventChannel *_eventChannel;
 
     MPVolumeView *_volumeView;
@@ -53,23 +53,23 @@ typedef NS_ENUM(int, FijkVoUIMode) {
     BOOL _showOsUI;
 }
 
-static FijkPlugin *_instance = nil;
+static FplayerPlugin *_instance = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
     FlutterMethodChannel *channel =
         [FlutterMethodChannel methodChannelWithName:@"befovy.com/fijk"
                                     binaryMessenger:[registrar messenger]];
-    FijkPlugin *instance = [[FijkPlugin alloc] initWithRegistrar:registrar];
+    FplayerPlugin *instance = [[FplayerPlugin alloc] initWithRegistrar:registrar];
     _instance = instance;
     [registrar addMethodCallDelegate:instance channel:channel];
 
-    FijkPlayer *player = [[FijkPlayer alloc] initJustTexture];
+    FPlayer *player = [[FPlayer alloc] initJustTexture];
     int64_t vid = [[registrar textures] registerTexture:player];
     [player shutdown];
     [[registrar textures] unregisterTexture:vid];
 }
 
-+ (FijkPlugin *)singleInstance {
++ (FplayerPlugin *)singleInstance {
     return _instance;
 }
 
@@ -78,12 +78,12 @@ static FijkPlugin *_instance = nil;
     self = [super init];
     if (self) {
         _registrar = registrar;
-        _fijkPlayers = [[NSMutableDictionary alloc] init];
+        _fPlayers = [[NSMutableDictionary alloc] init];
         _eventListening = FALSE;
         _volumeUIMode = alwaysShowUI;
         _volStep = 1.0 / 16.0;
         _showOsUI = YES;
-        _eventSink = [[FijkQueuingEventSink alloc] init];
+        _eventSink = [[FQueuingEventSink alloc] init];
 
         _eventChannel =
             [FlutterEventChannel eventChannelWithName:@"befovy.com/fijk/event"
@@ -110,17 +110,17 @@ static FijkPlugin *_instance = nil;
         NSLog(@"FLUTTER: %s %@", "call init:", argsMap);
         result(NULL);
     } else if ([@"createPlayer" isEqualToString:call.method]) {
-        FijkPlayer *fijkplayer =
-            [[FijkPlayer alloc] initWithRegistrar:_registrar];
-        NSNumber *playerId = fijkplayer.playerId;
-        _fijkPlayers[playerId] = fijkplayer;
+        FPlayer *fplayer =
+            [[FPlayer alloc] initWithRegistrar:_registrar];
+        NSNumber *playerId = fplayer.playerId;
+        _fPlayers[playerId] = fplayer;
         result(playerId);
     } else if ([@"releasePlayer" isEqualToString:call.method]) {
         NSNumber *pid = argsMap[@"pid"];
-        FijkPlayer *fijkPlayer = [_fijkPlayers objectForKey:pid];
-        [fijkPlayer shutdown];
-        if (fijkPlayer != nil) {
-            [_fijkPlayers removeObjectForKey:pid];
+        FPlayer *fPlayer = [_fPlayers objectForKey:pid];
+        [fPlayer shutdown];
+        if (fPlayer != nil) {
+            [_fPlayers removeObjectForKey:pid];
         }
         result(nil);
     } else if ([@"logLevel" isEqualToString:call.method]) {

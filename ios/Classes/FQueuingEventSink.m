@@ -22,7 +22,7 @@
 
 #import "FQueuingEventSink.h"
 
-@implementation FijkQueuingEventSink {
+@implementation FQueuingEventSink {
     NSMutableArray *_eventQueue;
     BOOL _done;
     FlutterEventSink _delegate;

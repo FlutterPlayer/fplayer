@@ -25,7 +25,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface FijkQueuingEventSink : NSObject
+@interface FQueuingEventSink : NSObject
 
 - (void)setDelegate:(FlutterEventSink _Nullable)sink;
 
