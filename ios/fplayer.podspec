@@ -26,7 +26,7 @@ A new Flutter plugin project.
 
   s.libraries = "bz2", "z", "stdc++"
 
-  s.dependency 'BIJKPlayer', '~> 0.7.16'
+  s.dependency 'fplayer-core', '0.0.1'
 
   s.ios.deployment_target = '8.0'
 
