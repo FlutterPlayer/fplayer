@@ -84,6 +84,16 @@ class __FPanel2State extends State<_FPanel2> {
   // Is it needed to clear seek data in FData (widget.data)
   bool _needClearSeekData = true;
 
+  StreamSubscription? connectTypeListener;
+  ConnectivityResult? connectivityResult;
+
+  final Battery battery = Battery();
+
+  StreamSubscription? batteryStateListener;
+  BatteryState? batteryState;
+  int batteryLevel = 0;
+  late Timer timer;
+
   static const FSliderColors sliderColors = FSliderColors(
     cursorColor: Color(0xFF07B9B9),
     playedColor: Color(0xFF07B9B9),
@@ -94,6 +104,28 @@ class __FPanel2State extends State<_FPanel2> {
   @override
   void initState() {
     super.initState();
+
+    connectTypeListener = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult result) {
+      setState(() {
+        connectivityResult = result;
+      });
+    });
+
+    batteryStateListener =
+        battery.onBatteryStateChanged.listen((BatteryState state) {
+      if (batteryState == state) return;
+      setState(() {
+        batteryState = state;
+      });
+    });
+
+    getBatteryLevel();
+
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      getBatteryLevel();
+    });
 
     _valController = StreamController.broadcast();
     _prepared = player.state.index >= FState.prepared.index;
@@ -143,7 +175,18 @@ class __FPanel2State extends State<_FPanel2> {
     _snapshotTimer?.cancel();
     _currentPosSubs?.cancel();
     _bufferPosSubs?.cancel();
+    connectTypeListener?.cancel();
+    batteryStateListener?.cancel();
     player.removeListener(_playerValueChanged);
+  }
+
+  getBatteryLevel() async {
+    final level = await battery.batteryLevel;
+    if (mounted) {
+      setState(() {
+        batteryLevel = level;
+      });
+    }
   }
 
   double dura2double(Duration d) {
@@ -275,6 +318,7 @@ class __FPanel2State extends State<_FPanel2> {
     _brightness = null;
   }
 
+  // 播放与暂停图标
   Widget buildPlayButton(BuildContext context, double height) {
     Widget icon = (player.state == FState.started)
         ? const Icon(Icons.pause_rounded, color: Color(0xFF07B9B9))
@@ -289,6 +333,7 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  // 全屏与退出全屏图标
   Widget buildFullScreenButton(BuildContext context, double height) {
     Icon icon = player.value.fullScreen
         ? const Icon(Icons.fullscreen_exit_rounded, color: Color(0xFF07B9B9))
@@ -307,6 +352,7 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  // 时间进度
   Widget buildTimeText(BuildContext context, double height) {
     String text =
         "${_duration2String(_currentPos)}/${_duration2String(_duration)}";
@@ -314,6 +360,7 @@ class __FPanel2State extends State<_FPanel2> {
         style: const TextStyle(fontSize: 12, color: Color(0xFFFFFFFF)));
   }
 
+  // 进度条
   Widget buildSlider(BuildContext context) {
     double duration = dura2double(_duration);
 
@@ -350,16 +397,31 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  // 播放器顶部菜单栏
   Widget buildTop(BuildContext context, double height) {
-    return Row(
-      children: <Widget>[
-        buildBack(context),
-        Expanded(child: Container()),
-        buildSetting(context),
-      ],
-    );
+    if (player.value.fullScreen) {
+      return Row(
+        children: <Widget>[
+          buildBack(context),
+          Expanded(child: Container()),
+          buildTimeNow(),
+          buildPower(),
+          buildNetConnect(),
+          buildSetting(context),
+        ],
+      );
+    } else {
+      return Row(
+        children: <Widget>[
+          buildBack(context),
+          Expanded(child: Container()),
+          buildSetting(context),
+        ],
+      );
+    }
   }
 
+  // 播放器底部菜单栏
   Widget buildBottom(BuildContext context, double height) {
     if (_duration.inMilliseconds > 0) {
       return Row(
@@ -521,6 +583,7 @@ class __FPanel2State extends State<_FPanel2> {
     }
   }
 
+  // 返回
   Widget buildBack(BuildContext context) {
     return IconButton(
       padding: EdgeInsets.zero,
@@ -536,12 +599,125 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
-  Widget buildSetting(BuildContext context) {
-    return const IconButton(
+  // 当前时间显示
+  Widget buildTimeNow() {
+    return Container(
+      padding: const EdgeInsets.only(right: 10),
+      child: Text(
+        '${DateTime.now().hour}:${DateTime.now().minute}',
+        style: const TextStyle(
+          color: Color(0xFF07B9B9),
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  // 电量显示
+  Widget buildPower() {
+    if (batteryState == BatteryState.charging) {
+      return Row(
+        children: [
+          Text(
+            '$batteryLevel%',
+            style: const TextStyle(
+              color: Color(0xFF07B9B9),
+              fontSize: 10,
+            ),
+          ),
+          const Icon(
+            Icons.battery_charging_full_rounded,
+            color: Color(0xFF07B9B9),
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        children: [
+          Text(
+            '$batteryLevel%',
+            style: const TextStyle(
+              color: Color(0xFF07B9B9),
+              fontSize: 10,
+            ),
+          ),
+          if (batteryLevel < 14)
+            const Icon(
+              Icons.battery_1_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else if (batteryLevel < 28)
+            const Icon(
+              Icons.battery_2_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else if (batteryLevel < 42)
+            const Icon(
+              Icons.battery_3_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else if (batteryLevel < 56)
+            const Icon(
+              Icons.battery_4_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else if (batteryLevel < 70)
+            const Icon(
+              Icons.battery_5_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else if (batteryLevel < 84)
+            const Icon(
+              Icons.battery_6_bar_rounded,
+              color: Color(0xFF07B9B9),
+            )
+          else
+            const Icon(
+              Icons.battery_full_rounded,
+              color: Color(0xFF07B9B9),
+            )
+        ],
+      );
+    }
+  }
+
+  // 5G、WIFI、无网络
+  Widget buildNetConnect() {
+    return IconButton(
       padding: EdgeInsets.zero,
-      icon: Icon(
-        Icons.tune_rounded,
-        color: Color(0xFF07B9B9),
+      icon: Visibility(
+        visible: connectivityResult == ConnectivityResult.none,
+        replacement: Visibility(
+          visible: connectivityResult == ConnectivityResult.mobile,
+          replacement: const Text(
+            'WIFI',
+            style: TextStyle(color: Color(0xFF07B9B9)),
+          ),
+          child: const Text(
+            '5G',
+            style: TextStyle(color: Color(0xFF07B9B9)),
+          ),
+        ),
+        child: const Icon(
+          Icons.signal_cellular_connected_no_internet_4_bar_rounded,
+          color: Color(0xFF07B9B9),
+        ),
+      ),
+      onPressed: null,
+    );
+  }
+
+  // 设置
+  Widget buildSetting(BuildContext context) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      icon: Transform.rotate(
+        angle: pi / 2,
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.tune_rounded,
+          color: Color(0xFF07B9B9),
+        ),
       ),
       onPressed: null,
     );
