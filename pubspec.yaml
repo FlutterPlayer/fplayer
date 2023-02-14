@@ -13,7 +13,7 @@ dependencies:
   plugin_platform_interface: ^2.0.2
 
   # 网络检测
-  connectivity_plus: ^3.0.2
+  # connectivity_plus: ^3.0.2
 
   # 电量获取
   battery_plus: ^3.0.2

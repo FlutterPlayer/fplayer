@@ -84,8 +84,8 @@ class __FPanel2State extends State<_FPanel2> {
   // Is it needed to clear seek data in FData (widget.data)
   bool _needClearSeekData = true;
 
-  StreamSubscription? connectTypeListener;
-  ConnectivityResult? connectivityResult;
+  // StreamSubscription? connectTypeListener;
+  // ConnectivityResult? connectivityResult;
 
   final Battery battery = Battery();
 
@@ -105,13 +105,13 @@ class __FPanel2State extends State<_FPanel2> {
   void initState() {
     super.initState();
 
-    connectTypeListener = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      setState(() {
-        connectivityResult = result;
-      });
-    });
+    // connectTypeListener = Connectivity()
+    //     .onConnectivityChanged
+    //     .listen((ConnectivityResult result) {
+    //   setState(() {
+    //     connectivityResult = result;
+    //   });
+    // });
 
     batteryStateListener =
         battery.onBatteryStateChanged.listen((BatteryState state) {
@@ -175,7 +175,7 @@ class __FPanel2State extends State<_FPanel2> {
     _snapshotTimer?.cancel();
     _currentPosSubs?.cancel();
     _bufferPosSubs?.cancel();
-    connectTypeListener?.cancel();
+    // connectTypeListener?.cancel();
     batteryStateListener?.cancel();
     player.removeListener(_playerValueChanged);
   }
@@ -406,7 +406,7 @@ class __FPanel2State extends State<_FPanel2> {
           Expanded(child: Container()),
           buildTimeNow(),
           buildPower(),
-          buildNetConnect(),
+          // buildNetConnect(),
           buildSetting(context),
         ],
       );
@@ -682,30 +682,30 @@ class __FPanel2State extends State<_FPanel2> {
   }
 
   // 5G、WIFI、无网络
-  Widget buildNetConnect() {
-    return IconButton(
-      padding: EdgeInsets.zero,
-      icon: Visibility(
-        visible: connectivityResult == ConnectivityResult.none,
-        replacement: Visibility(
-          visible: connectivityResult == ConnectivityResult.mobile,
-          replacement: const Text(
-            'WIFI',
-            style: TextStyle(color: Color(0xFF07B9B9)),
-          ),
-          child: const Text(
-            '5G',
-            style: TextStyle(color: Color(0xFF07B9B9)),
-          ),
-        ),
-        child: const Icon(
-          Icons.signal_cellular_connected_no_internet_4_bar_rounded,
-          color: Color(0xFF07B9B9),
-        ),
-      ),
-      onPressed: null,
-    );
-  }
+  // Widget buildNetConnect() {
+  //   return IconButton(
+  //     padding: EdgeInsets.zero,
+  //     icon: Visibility(
+  //       visible: connectivityResult == ConnectivityResult.none,
+  //       replacement: Visibility(
+  //         visible: connectivityResult == ConnectivityResult.mobile,
+  //         replacement: const Text(
+  //           'WIFI',
+  //           style: TextStyle(color: Color(0xFF07B9B9)),
+  //         ),
+  //         child: const Text(
+  //           '5G',
+  //           style: TextStyle(color: Color(0xFF07B9B9)),
+  //         ),
+  //       ),
+  //       child: const Icon(
+  //         Icons.signal_cellular_connected_no_internet_4_bar_rounded,
+  //         color: Color(0xFF07B9B9),
+  //       ),
+  //     ),
+  //     onPressed: null,
+  //   );
+  // }
 
   // 设置
   Widget buildSetting(BuildContext context) {
