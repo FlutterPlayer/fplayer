@@ -44,34 +44,36 @@ class MediaItem extends StatelessWidget {
     if (mediaUrl.title != null) {
       ws.add(Text(
         mediaUrl.title!,
-        style: TextStyle(fontSize: 15),
+        style: const TextStyle(fontSize: 15),
       ));
     }
     ws.add(Text(
       mediaUrl.url,
-      style: TextStyle(fontSize: 13),
+      style: const TextStyle(fontSize: 13),
     ));
     return ButtonTheme(
 //      height: mediaUrl.title == null ? 50 : 60,
 
       child: Container(
-        padding: EdgeInsets.all(0),
+        padding: const EdgeInsets.all(0),
         child: TextButton(
-            key: ValueKey(mediaUrl.url),
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => VideoScreen(url: mediaUrl.url)));
-            },
-            child: Container(
-                width: double.infinity,
-                padding:
-                    EdgeInsets.only(left: 15, right: 15, top: 10, bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: ws,
-                ))),
+          key: ValueKey(mediaUrl.url),
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => VideoScreen(url: mediaUrl.url)));
+          },
+          child: Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.only(left: 15, right: 15, top: 10, bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: ws,
+            ),
+          ),
+        ),
       ),
     );
   }

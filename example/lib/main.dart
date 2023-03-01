@@ -24,11 +24,11 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Color(0xFFffd54f),
-        primaryColorDark: Color(0xFFffc107),
-        primaryColorLight: Color(0xFFffecb3),
-        accentColor: Color(0xFFFFC107),
-        dividerColor: Color(0xFFBDBDBD),
+        primaryColor: const Color(0xFFffd54f),
+        primaryColorDark: const Color(0xFFffc107),
+        primaryColorLight: const Color(0xFFffecb3),
+        accentColor: const Color(0xFFFFC107),
+        dividerColor: const Color(0xFFBDBDBD),
       ),
       home: HomeScreen(),
     );

@@ -4,7 +4,8 @@ import 'package:fplayer_example/recent_list.dart';
 import 'app_bar.dart';
 
 class HomeItem extends StatelessWidget {
-  HomeItem({
+  const HomeItem({
+    super.key,
     required this.onPressed,
     required this.text,
   });
@@ -17,15 +18,16 @@ class HomeItem extends StatelessWidget {
     return ButtonTheme(
       height: 45,
       child: Container(
-        padding: EdgeInsets.all(0),
+        padding: const EdgeInsets.all(0),
         child: TextButton(
-            key: ValueKey(text),
-            onPressed: this.onPressed,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.only(left: 15, right: 15),
-              child: Text(this.text),
-            )),
+          key: ValueKey(text),
+          onPressed: onPressed,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(left: 15, right: 15),
+            child: Text(text),
+          ),
+        ),
       ),
     );
   }
@@ -34,11 +36,13 @@ class HomeItem extends StatelessWidget {
 class HomeScreen extends StatelessWidget {
   final RecentMediaList list = RecentMediaList();
 
+  HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FijkAppBar.defaultSetting(
-        title: "FijkPlayer",
+      appBar: const FAppBar.defaultSetting(
+        title: "FPlayer",
       ),
       body: Builder(
         builder: (ctx) => Column(
@@ -46,7 +50,8 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             Container(
               color: Theme.of(context).primaryColorLight,
-              padding: EdgeInsets.only(left: 15, top: 3, bottom: 3, right: 15),
+              padding:
+                  const EdgeInsets.only(left: 15, top: 3, bottom: 3, right: 15),
               child: const Text(
                 "Open From",
                 style: TextStyle(fontSize: 15),
@@ -80,7 +85,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 void displaySnackBar(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
     duration: Duration(seconds: 1),
     content: Text('Not implemented, pull request is welcome 👏👏🍺🍺'),
   ));

@@ -79,7 +79,7 @@ class SamplesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FijkAppBar.defaultSetting(title: "Online Samples"),
+      appBar: FAppBar.defaultSetting(title: "Online Samples"),
       body: ListView.builder(
           itemCount: samples.length,
           itemBuilder: (BuildContext context, int index) {
