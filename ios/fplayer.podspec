@@ -16,7 +16,7 @@ A new Flutter plugin project.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.platform = :ios, '9.0'
+  s.platform = :ios, '11.0'
 
   s.static_framework = true
 
@@ -26,9 +26,9 @@ A new Flutter plugin project.
 
   s.libraries = "bz2", "z", "stdc++"
 
-  s.dependency 'fplayer-core', '0.0.1'
+  s.dependency 'fplayer-core', '0.1.7'
 
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '11.0'
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
