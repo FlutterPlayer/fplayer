@@ -40,11 +40,50 @@ class VideoScreenState extends State<VideoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FAppBar.defaultSetting(title: "Video"),
+      appBar: const FAppBar.defaultSetting(title: "Video"),
       body: Center(
         child: FView(
           player: player,
-          panelBuilder: fPanel2Builder(snapShot: true),
+          panelBuilder: fPanel2Builder(
+            title: '视频标题',
+            subTitle: '视频副标题',
+            snapShot: true,
+            rightButton: true,
+            rightButtonList: [
+              InkWell(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0x33000000),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.favorite,
+                    color: Color(0xFF07B9B9),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0x33000000),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.thumb_up,
+                    color: Color(0xFF07B9B9),
+                  ),
+                ),
+              )
+            ],
+          ),
           fsFit: FFit.fill,
         ),
       ),

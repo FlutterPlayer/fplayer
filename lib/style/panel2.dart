@@ -3,8 +3,14 @@ part of fplayer;
 FPanelWidgetBuilder fPanel2Builder({
   Key? key,
   final bool fill = false,
+  final bool videos = false,
+  final String title = '',
+  final String subTitle = '',
+  final List<Map<String, String>>? videoMap,
   final int duration = 4000,
   final bool doubleTap = true,
+  final bool rightButton = false,
+  final List<Widget>? rightButtonList,
   final bool snapShot = false,
   // final VoidCallback? onBack,
 }) {
@@ -15,6 +21,12 @@ FPanelWidgetBuilder fPanel2Builder({
       player: player,
       data: data,
       // onBack: onBack,
+      videos: videos,
+      title: title,
+      subTitle: subTitle,
+      videoMap: videoMap,
+      rightButton: rightButton,
+      rightButtonList: rightButtonList,
       viewSize: viewSize,
       texPos: texturePos,
       fill: fill,
@@ -29,6 +41,12 @@ class _FPanel2 extends StatefulWidget {
   final FPlayer player;
   final FData data;
   // final VoidCallback? onBack;
+  final bool videos;
+  final String title;
+  final String subTitle;
+  final List<Map<String, String>>? videoMap;
+  final bool rightButton;
+  final List<Widget>? rightButtonList;
   final Size viewSize;
   final Rect texPos;
   final bool fill;
@@ -36,18 +54,24 @@ class _FPanel2 extends StatefulWidget {
   final bool snapShot;
   final int hideDuration;
 
-  const _FPanel2(
-      {Key? key,
-      required this.player,
-      required this.data,
-      this.fill = false,
-      // this.onBack,
-      required this.viewSize,
-      this.hideDuration = 4000,
-      this.doubleTap = false,
-      this.snapShot = false,
-      required this.texPos})
-      : assert(hideDuration > 0 && hideDuration < 10000),
+  const _FPanel2({
+    Key? key,
+    required this.player,
+    required this.data,
+    this.fill = false,
+    // this.onBack,
+    required this.viewSize,
+    this.hideDuration = 4000,
+    this.doubleTap = false,
+    this.snapShot = false,
+    required this.texPos,
+    this.videos = false,
+    this.title = '',
+    this.subTitle = '',
+    this.videoMap,
+    this.rightButtonList,
+    this.rightButton = false,
+  })  : assert(hideDuration > 0 && hideDuration < 10000),
         super(key: key);
 
   @override
@@ -333,6 +357,34 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  Widget buildOptTextButton(BuildContext context, double height) {
+    return Row(
+      children: [
+        TextButton(
+          onPressed: () {},
+          child: const Text(
+            '字幕',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
+          ),
+        ),
+        TextButton(
+          onPressed: () {},
+          child: const Text(
+            '倍速',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
+          ),
+        ),
+        TextButton(
+          onPressed: () {},
+          child: const Text(
+            '自动',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
+          ),
+        ),
+      ],
+    );
+  }
+
   // 全屏与退出全屏图标
   Widget buildFullScreenButton(BuildContext context, double height) {
     Icon icon = player.value.fullScreen
@@ -400,14 +452,23 @@ class __FPanel2State extends State<_FPanel2> {
   // 播放器顶部菜单栏
   Widget buildTop(BuildContext context, double height) {
     if (player.value.fullScreen) {
-      return Row(
-        children: <Widget>[
-          buildBack(context),
-          Expanded(child: Container()),
-          buildTimeNow(),
-          buildPower(),
-          // buildNetConnect(),
-          buildSetting(context),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Row(
+              children: <Widget>[
+                buildBack(context),
+                buildTitle(),
+                const Spacer(),
+                buildTimeNow(),
+                buildPower(),
+                // buildNetConnect(),
+                buildSetting(context),
+              ],
+            ),
+          ),
+          buildSubTitle(),
         ],
       );
     } else {
@@ -424,14 +485,58 @@ class __FPanel2State extends State<_FPanel2> {
   // 播放器底部菜单栏
   Widget buildBottom(BuildContext context, double height) {
     if (_duration.inMilliseconds > 0) {
-      return Row(
-        children: <Widget>[
-          buildPlayButton(context, height),
-          buildTimeText(context, height),
-          Expanded(child: buildSlider(context)),
-          buildFullScreenButton(context, height),
-        ],
-      );
+      if (player.value.fullScreen) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  Text(
+                    _duration2String(_currentPos),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFFFFFF),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: buildSlider(context),
+                    ),
+                  ),
+                  Text(
+                    _duration2String(_duration),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFFFFFF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  buildPlayButton(context, height),
+                  const Spacer(),
+                  buildOptTextButton(context, height),
+                  buildFullScreenButton(context, height),
+                ],
+              ),
+            ),
+          ],
+        );
+      } else {
+        return Row(
+          children: <Widget>[
+            buildPlayButton(context, height),
+            Expanded(child: buildSlider(context)),
+            buildTimeText(context, height),
+            buildFullScreenButton(context, height),
+          ],
+        );
+      }
     } else {
       return Row(
         children: <Widget>[
@@ -461,7 +566,10 @@ class __FPanel2State extends State<_FPanel2> {
     double height = panelHeight();
 
     bool fullScreen = player.value.fullScreen;
-    Widget centerWidget = Container(
+    Widget leftWidget = Container(
+      color: const Color(0x00000000),
+    );
+    Widget rightWidget = Container(
       color: const Color(0x00000000),
     );
 
@@ -469,24 +577,76 @@ class __FPanel2State extends State<_FPanel2> {
       color: const Color(0x00000000),
     );
 
-    if (fullScreen && widget.snapShot) {
-      centerWidget = Row(
+    if (fullScreen) {
+      rightWidget = Row(
         children: <Widget>[
           Expanded(child: centerChild),
           Padding(
             padding:
                 const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 8),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                IconButton(
-                  padding: const EdgeInsets.all(0),
-                  color: const Color(0xFFFFFFFF),
-                  icon: const Icon(Icons.camera_alt),
-                  onPressed: () {
-                    takeSnapshot();
-                  },
+                Visibility(
+                  visible: widget.rightButton,
+                  child: Column(
+                    children: widget.rightButtonList ?? [],
+                  ),
                 ),
+                Visibility(
+                  visible: widget.rightButton,
+                  child: const SizedBox(
+                    height: 20,
+                  ),
+                ),
+                if (widget.snapShot)
+                  InkWell(
+                    onTap: () {
+                      takeSnapshot();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0x33000000),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(5),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Color(0xFF07B9B9),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          )
+        ],
+      );
+      leftWidget = Row(
+        children: <Widget>[
+          Padding(
+            padding:
+                const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0x33000000),
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(5),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      color: Color(0xFF07B9B9),
+                    ),
+                  ),
+                )
               ],
             ),
           )
@@ -507,13 +667,27 @@ class __FPanel2State extends State<_FPanel2> {
           ),
           alignment: Alignment.topCenter,
           child: Container(
-            height: height > 80 ? 45 : height / 2,
+            height: height > 80
+                ? fullScreen
+                    ? 80
+                    : 45
+                : height / 2,
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 5),
             child: buildTop(context, height > 80 ? 40 : height / 2),
           ),
         ),
         Expanded(
-          child: centerWidget,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: leftWidget,
+              ),
+              Expanded(
+                child: rightWidget,
+              ),
+            ],
+          ),
         ),
         Container(
           height: height > 80 ? 80 : height / 2,
@@ -526,7 +700,11 @@ class __FPanel2State extends State<_FPanel2> {
           ),
           alignment: Alignment.bottomCenter,
           child: Container(
-            height: height > 80 ? 45 : height / 2,
+            height: height > 80
+                ? fullScreen
+                    ? 80
+                    : 45
+                : height / 2,
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 5),
             child: buildBottom(context, height > 80 ? 40 : height / 2),
           ),
@@ -596,6 +774,29 @@ class __FPanel2State extends State<_FPanel2> {
             ? player.exitFullScreen()
             : Navigator.of(context).pop();
       },
+    );
+  }
+
+  Widget buildTitle() {
+    return Text(
+      widget.title,
+      style: const TextStyle(
+        fontSize: 22,
+        color: Color(0xFF787878),
+      ),
+    );
+  }
+
+  Widget buildSubTitle() {
+    return Container(
+      padding: const EdgeInsets.only(left: 55),
+      child: Text(
+        widget.subTitle,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF787878),
+        ),
+      ),
     );
   }
 
