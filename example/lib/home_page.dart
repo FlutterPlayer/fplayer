@@ -48,15 +48,6 @@ class HomeScreen extends StatelessWidget {
         builder: (ctx) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Container(
-              color: Theme.of(context).primaryColorLight,
-              padding:
-                  const EdgeInsets.only(left: 15, top: 3, bottom: 3, right: 15),
-              child: const Text(
-                "Open From",
-                style: TextStyle(fontSize: 15),
-              ),
-            ),
             HomeItem(
               onPressed: () {
                 Navigator.push(context,

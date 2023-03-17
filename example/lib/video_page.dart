@@ -85,6 +85,17 @@ class VideoScreenState extends State<VideoScreen> {
                 ),
               )
             ],
+            caption: true,
+            settingFun: () {
+              print('设置按钮点击事件');
+            },
+            captionFun: () {
+              print('字幕按钮点击事件');
+            },
+            resolution: true,
+            resolutionFun: () {
+              print('清晰度按钮点击事件');
+            },
           ),
           fsFit: FFit.fill,
         ),

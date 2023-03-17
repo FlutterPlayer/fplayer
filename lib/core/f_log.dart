@@ -6,8 +6,7 @@ class FLogLevel {
   final String name;
 
   const FLogLevel._(int l, String n)
-      : assert(l != null),
-        level = l,
+      : level = l,
         name = n;
 
   /// Priority constant for the [FijkLog.log] method;
@@ -61,7 +60,6 @@ class FLog {
   /// If you care about app boot performance,
   /// you should call this method as late as possiable. Call this method before the first time you consturctor new [FijkPlayer]
   static setLevel(final FLogLevel level) {
-    assert(level != null);
     _level = level;
     log(FLogLevel.Silent, "set log level $level", "fijk");
     FPlugin._setLogLevel(level.level).then((_) {
