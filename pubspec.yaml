@@ -1,6 +1,6 @@
 name: fplayer
 description: A Video Player Flutter plugin based on fijkplayer, support most popular protocols and codecs.
-version: 0.0.1
+version: 1.0.0
 homepage: https://github.com/FlutterPlayer/fplayer.git
 
 environment:
