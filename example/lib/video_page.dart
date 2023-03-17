@@ -40,11 +40,63 @@ class VideoScreenState extends State<VideoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FAppBar.defaultSetting(title: "Video"),
+      appBar: const FAppBar.defaultSetting(title: "Video"),
       body: Center(
         child: FView(
           player: player,
-          panelBuilder: fPanel2Builder(snapShot: true),
+          panelBuilder: fPanel2Builder(
+            title: '视频标题',
+            subTitle: '视频副标题',
+            // 右下方截屏按钮
+            snapShot: true,
+            // 右上方按钮组
+            rightButton: true,
+            rightButtonList: [
+              InkWell(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0x33000000),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.favorite,
+                    color: Color(0xFF07B9B9),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0x33000000),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.thumb_up,
+                    color: Color(0xFF07B9B9),
+                  ),
+                ),
+              )
+            ],
+            caption: true,
+            settingFun: () {
+              print('设置按钮点击事件');
+            },
+            captionFun: () {
+              print('字幕按钮点击事件');
+            },
+            resolution: true,
+            resolutionFun: () {
+              print('清晰度按钮点击事件');
+            },
+          ),
           fsFit: FFit.fill,
         ),
       ),
