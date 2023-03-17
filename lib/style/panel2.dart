@@ -649,7 +649,8 @@ class __FPanel2State extends State<_FPanel2> {
                 )
               ],
             ),
-          )
+          ),
+          Expanded(child: centerChild),
         ],
       );
     }

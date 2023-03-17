@@ -47,7 +47,9 @@ class VideoScreenState extends State<VideoScreen> {
           panelBuilder: fPanel2Builder(
             title: '视频标题',
             subTitle: '视频副标题',
+            // 右下方截屏按钮
             snapShot: true,
+            // 右上方按钮组
             rightButton: true,
             rightButtonList: [
               InkWell(
