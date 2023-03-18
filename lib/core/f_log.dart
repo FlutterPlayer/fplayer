@@ -9,39 +9,39 @@ class FLogLevel {
       : level = l,
         name = n;
 
-  /// Priority constant for the [FijkLog.log] method;
+  /// Priority constant for the [FLog.log] method;
   static const FLogLevel All = FLogLevel._(000, 'all');
 
-  /// Priority constant for the [FijkLog.log] method;
+  /// Priority constant for the [FLog.log] method;
   static const FLogLevel Detail = FLogLevel._(100, 'det');
 
-  /// Priority constant for the [FijkLog.log] method;
+  /// Priority constant for the [FLog.log] method;
   static const FLogLevel Verbose = FLogLevel._(200, 'veb');
 
-  /// Priority constant for the [FijkLog.log] method; use [FijkLog.d(msg)]
+  /// Priority constant for the [FLog.log] method; use [FLog.d(msg)]
   static const FLogLevel Debug = FLogLevel._(300, 'dbg');
 
-  /// Priority constant for the [FijkLog.log] method; use [FijkLog.i(msg)]
+  /// Priority constant for the [FLog.log] method; use [FLog.i(msg)]
   static const FLogLevel Info = FLogLevel._(400, 'inf');
 
-  /// Priority constant for the [FijkLog.log] method; use [FijkLog.w(msg)]
+  /// Priority constant for the [FLog.log] method; use [FLog.w(msg)]
   static const FLogLevel Warn = FLogLevel._(500, 'war');
 
-  /// Priority constant for the [FijkLog.log] method; use [FijkLog.e(msg)]
+  /// Priority constant for the [FLog.log] method; use [FLog.e(msg)]
   static const FLogLevel Error = FLogLevel._(600, 'err');
   static const FLogLevel Fatal = FLogLevel._(700, 'fal');
   static const FLogLevel Silent = FLogLevel._(800, 'sil');
 
   @override
   String toString() {
-    return 'FijkLogLevel{level:$level, name:$name}';
+    return 'FLogLevel{level:$level, name:$name}';
   }
 }
 
 /// API for sending log output
 ///
-/// Generally, you should use the [FijkLog.d(msg)], [FijkLog.i(msg)],
-/// [FijkLog.w(msg)], and [FijkLog.e(msg)] methods to write logs.
+/// Generally, you should use the [FLog.d(msg)], [FLog.i(msg)],
+/// [FLog.w(msg)], and [FLog.e(msg)] methods to write logs.
 /// You can then view the logs in console/logcat.
 ///
 /// The order in terms of verbosity, from least to most is ERROR, WARN, INFO, DEBUG, VERBOSE.
@@ -58,12 +58,12 @@ class FLog {
   ///
   /// Call this method on Android platform will load natvie shared libraries.
   /// If you care about app boot performance,
-  /// you should call this method as late as possiable. Call this method before the first time you consturctor new [FijkPlayer]
+  /// you should call this method as late as possiable. Call this method before the first time you consturctor new [FPlayer]
   static setLevel(final FLogLevel level) {
     _level = level;
-    log(FLogLevel.Silent, "set log level $level", "fijk");
+    log(FLogLevel.Silent, "set log level $level", "fplayer");
     FPlugin._setLogLevel(level.level).then((_) {
-      log(FLogLevel.Silent, "native log level ${level.level}", "fijk");
+      log(FLogLevel.Silent, "native log level ${level.level}", "fplayer");
     });
   }
 
@@ -75,28 +75,28 @@ class FLog {
     }
   }
 
-  /// log [msg] with [FijkLogLevel.Verbose] level
-  static v(String msg, {String tag = 'fijk'}) {
+  /// log [msg] with [FLogLevel.Verbose] level
+  static v(String msg, {String tag = 'fplayer'}) {
     log(FLogLevel.Verbose, msg, tag);
   }
 
-  /// log [msg] with [FijkLogLevel.Debug] level
-  static d(String msg, {String tag = 'fijk'}) {
+  /// log [msg] with [FLogLevel.Debug] level
+  static d(String msg, {String tag = 'fplayer'}) {
     log(FLogLevel.Debug, msg, tag);
   }
 
-  /// log [msg] with [FijkLogLevel.Info] level
-  static i(String msg, {String tag = 'fijk'}) {
+  /// log [msg] with [FLogLevel.Info] level
+  static i(String msg, {String tag = 'fplayer'}) {
     log(FLogLevel.Info, msg, tag);
   }
 
-  /// log [msg] with [FijkLogLevel.Warn] level
-  static w(String msg, {String tag = 'fijk'}) {
+  /// log [msg] with [FLogLevel.Warn] level
+  static w(String msg, {String tag = 'fplayer'}) {
     log(FLogLevel.Warn, msg, tag);
   }
 
-  /// log [msg] with [FijkLogLevel.Error] level
-  static e(String msg, {String tag = 'fijk'}) {
+  /// log [msg] with [FLogLevel.Error] level
+  static e(String msg, {String tag = 'fplayer'}) {
     log(FLogLevel.Error, msg, tag);
   }
 }

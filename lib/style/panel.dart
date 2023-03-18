@@ -47,9 +47,9 @@ String _duration2String(Duration duration) {
 class _DefaultFPanelState extends State<_DefaultFPanel> {
   FPlayer get player => widget.player;
 
-  Duration _duration = Duration();
-  Duration _currentPos = Duration();
-  Duration _bufferPos = Duration();
+  Duration _duration = const Duration();
+  Duration _currentPos = const Duration();
+  Duration _bufferPos = const Duration();
 
   bool _playing = false;
   bool _prepared = false;
@@ -183,7 +183,7 @@ class _DefaultFPanelState extends State<_DefaultFPanel> {
     currentValue = max(currentValue, 0);
     return AnimatedOpacity(
       opacity: _hideStuff ? 0.0 : 0.8,
-      duration: Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 400),
       child: Container(
         height: barHeight,
         color: Theme.of(context).dialogBackgroundColor,
@@ -191,10 +191,10 @@ class _DefaultFPanelState extends State<_DefaultFPanel> {
           children: <Widget>[
             _buildVolumeButton(),
             Padding(
-              padding: EdgeInsets.only(right: 5.0, left: 5),
+              padding: const EdgeInsets.only(right: 5.0, left: 5),
               child: Text(
-                '${_duration2String(_currentPos)}',
-                style: TextStyle(fontSize: 14.0),
+                _duration2String(_currentPos),
+                style: const TextStyle(fontSize: 14.0),
               ),
             ),
 
@@ -202,7 +202,7 @@ class _DefaultFPanelState extends State<_DefaultFPanel> {
                 ? const Expanded(child: Center())
                 : Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(right: 0, left: 0),
+                      padding: const EdgeInsets.only(right: 0, left: 0),
                       child: FSlider(
                         value: currentValue,
                         cacheValue: _bufferPos.inMilliseconds.toDouble(),

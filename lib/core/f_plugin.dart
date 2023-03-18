@@ -29,7 +29,7 @@ class FPlugin {
 
   /// Only works on Android and iOS
   static Future<bool> setOrientationPortrait() async {
-    if (isDesktop()) return Future.value();
+    if (isDesktop()) return Future<bool>.value(true);
     // ios crash Supported orientations has no common orientation with the application
     bool? changed = await _channel.invokeMethod("setOrientationPortrait");
     SystemChrome.setPreferredOrientations(

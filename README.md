@@ -1,7 +1,7 @@
 # fplayer (Video player plugin for Flutter) Flutter 媒体播放器
 
 
-A Flutter media player plugin for iOS and android based on [fijkplayer](https://github.com/befovy/fijkplayer)
+A Flutter media player plugin for iOS and android based on [fplayer-core](https://github.com/FlutterPlayer/ijkplayer)
 
 您的支持是我们开发的动力。 欢迎Star，欢迎PR~。
 [Feedback welcome](https://github.com/FlutterPlayer/fplayer/issues) and

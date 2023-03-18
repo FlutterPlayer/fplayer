@@ -9,7 +9,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   late MethodChannel _channel;
   StreamSubscription<dynamic>? _nativeEventSubscription;
 
-  bool _startAfterSetup = false;
+  final bool _startAfterSetup = false;
 
   FValue _value;
 
@@ -62,7 +62,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// stream of [bufferPercent].
   Stream<int> get onBufferPercentUpdate => _bufferPercentController.stream;
 
-  Duration _currentPos = Duration();
+  Duration _currentPos = const Duration();
 
   /// return the current playing position
   Duration get currentPos => _currentPos;
@@ -149,9 +149,9 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     FLog.i("create player id:$_playerId");
 
     _allInstance[_playerId] = this;
-    _channel = MethodChannel('befovy.com/fijkplayer/' + _playerId.toString());
+    _channel = MethodChannel('befovy.com/fijkplayer/$_playerId');
     _nativeEventSubscription =
-        EventChannel('befovy.com/fijkplayer/event/' + _playerId.toString())
+        EventChannel('befovy.com/fijkplayer/event/$_playerId')
             .receiveBroadcastStream()
             .listen(_eventListener, onError: _errorListener);
     _nativeSetup.complete(_playerId);
@@ -246,13 +246,13 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// If set [autoPlay] true, player will stat to play.
   /// The behavior of [setDataSource(url, autoPlay: true)] is like
   ///    await setDataSource(url);
-  ///    await setOption(FijkOption.playerCategory, "start-on-prepared", 1);
+  ///    await setOption(FOption.playerCategory, "start-on-prepared", 1);
   ///    await prepareAsync();
   ///
   /// If set [showCover] true, player will display the first video frame and then enter [FState.paused] state.
   /// The behavior of [setDataSource(url, showCover: true)] is like
   ///    await setDataSource(url);
-  ///    await setOption(FijkOption.playerCategory, "cover-after-prepared", 1);
+  ///    await setOption(FOption.playerCategory, "cover-after-prepared", 1);
   ///    await prepareAsync();
   ///
   /// If both [autoPlay] and [showCover] are true, [showCover] will be ignored.
@@ -261,7 +261,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     bool autoPlay = false,
     bool showCover = false,
   }) async {
-    if (path == null || path.length == 0 || Uri.tryParse(path) == null) {
+    if (path.isEmpty || Uri.tryParse(path) == null) {
       FLog.e("$this setDataSource invalid path:$path");
       return Future.error(
           ArgumentError.value(path, "path must be a valid url"));
@@ -294,8 +294,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
 
   /// start the async preparing tasks
   ///
-  /// see [fijkstate zh](https://fijkplayer.befovy.com/docs/zh/fijkstate.html) or
-  /// [fijkstate en](https://fijkplayer.befovy.com/docs/en/fijkstate.html) for details
+  /// see [fstate zh](https://fplayer.dev/basic/status.html) for details
   Future<void> prepareAsync() async {
     await _nativeSetup.future;
     if (state == FState.initialized) {
@@ -340,8 +339,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// change player's state to [FState.started]
   ///
   /// throw [StateError] if call this method on invalid state.
-  /// see [fijkstate zh](https://fijkplayer.befovy.com/docs/zh/fijkstate.html) or
-  /// [fijkstate en](https://fijkplayer.befovy.com/docs/en/fijkstate.html) for details
+  /// see [fstate zh](https://fplayer.dev/basic/status.html) for details
   Future<void> start() async {
     await _nativeSetup.future;
     if (state == FState.initialized) {
