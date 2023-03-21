@@ -3,14 +3,22 @@ part of fplayer;
 FPanelWidgetBuilder fPanel2Builder({
   Key? key,
   final bool fill = false,
+
+  /// 是否展示视频列表
   final bool videos = false,
+
+  /// 视频列表
+  final List<VideoItem>? videoMap,
+  final int videoIndex = 0,
+
+  /// 下一集点击事件
+  final void Function()? playNextVideoFun,
 
   /// 视频标题
   final String title = '',
 
   /// 视频副标题
   final String subTitle = '',
-  final List<Map<String, String>>? videoMap,
   final int duration = 4000,
   final bool doubleTap = true,
 
@@ -50,6 +58,8 @@ FPanelWidgetBuilder fPanel2Builder({
       title: title,
       subTitle: subTitle,
       videoMap: videoMap,
+      videoIndex: videoIndex,
+      playNextVideoFun: playNextVideoFun,
       rightButton: rightButton,
       rightButtonList: rightButtonList,
       viewSize: viewSize,
@@ -67,6 +77,17 @@ FPanelWidgetBuilder fPanel2Builder({
   };
 }
 
+class VideoItem {
+  String url;
+  String title;
+  String subTitle;
+  VideoItem({
+    required this.url,
+    required this.title,
+    required this.subTitle,
+  });
+}
+
 class _FPanel2 extends StatefulWidget {
   final FPlayer player;
   final FData data;
@@ -74,7 +95,9 @@ class _FPanel2 extends StatefulWidget {
   final bool videos;
   final String title;
   final String subTitle;
-  final List<Map<String, String>>? videoMap;
+  final List<VideoItem>? videoMap;
+  final int videoIndex;
+  final void Function()? playNextVideoFun;
   final bool rightButton;
   final List<Widget>? rightButtonList;
   final Size viewSize;
@@ -111,6 +134,8 @@ class _FPanel2 extends StatefulWidget {
     this.captionFun,
     this.resolutionFun,
     this.settingFun,
+    this.videoIndex = 0,
+    this.playNextVideoFun,
   })  : assert(hideDuration > 0 && hideDuration < 10000),
         super(key: key);
 
@@ -323,6 +348,21 @@ class __FPanel2State extends State<_FPanel2> {
     }
   }
 
+  Future<void> playNextVideo() async {
+    await player.reset();
+    try {
+      await player.setDataSource(
+        widget.videoMap![widget.videoIndex + 1].url,
+        autoPlay: true,
+        showCover: true,
+      );
+      widget.playNextVideoFun?.call();
+    } catch (error) {
+      print("播放-异常: $error");
+      return;
+    }
+  }
+
   void onDoubleTapFun() {
     playOrPause();
   }
@@ -445,9 +485,22 @@ class __FPanel2State extends State<_FPanel2> {
     return IconButton(
       padding: EdgeInsets.zero,
       iconSize: fullScreen ? height : height * 0.8,
-      color: Theme.of(context).primaryColorDark,
       icon: icon,
       onPressed: playOrPause,
+    );
+  }
+
+  // 下一集图标
+  Widget buildPlayNextButton(BuildContext context, double height) {
+    bool fullScreen = player.value.fullScreen;
+    return IconButton(
+      padding: EdgeInsets.zero,
+      iconSize: fullScreen ? height : height * 0.8,
+      icon: Icon(
+        Icons.skip_next_rounded,
+        color: Theme.of(context).primaryColor,
+      ),
+      onPressed: playNextVideo,
     );
   }
 
@@ -682,6 +735,9 @@ class __FPanel2State extends State<_FPanel2> {
               child: Row(
                 children: <Widget>[
                   buildPlayButton(context, height),
+                  if (widget.videos &&
+                      widget.videoMap!.length - 1 > widget.videoIndex)
+                    buildPlayNextButton(context, height),
                   const Spacer(),
                   buildOptTextButton(context, height),
                   buildFullScreenButton(context, height),
@@ -694,7 +750,12 @@ class __FPanel2State extends State<_FPanel2> {
         return Row(
           children: <Widget>[
             buildPlayButton(context, height),
-            Expanded(child: buildSlider(context)),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.only(right: 10),
+                child: buildSlider(context),
+              ),
+            ),
             buildTimeText(context, height),
             buildFullScreenButton(context, height),
           ],
@@ -1006,7 +1067,7 @@ class __FPanel2State extends State<_FPanel2> {
 
   Widget buildTitle() {
     return Text(
-      widget.title,
+      widget.videos ? widget.videoMap![widget.videoIndex].title : widget.title,
       style: const TextStyle(
         fontSize: 22,
         color: Color(0xFF787878),
@@ -1018,7 +1079,9 @@ class __FPanel2State extends State<_FPanel2> {
     return Container(
       padding: const EdgeInsets.only(left: 55),
       child: Text(
-        widget.subTitle,
+        widget.videos
+            ? widget.videoMap![widget.videoIndex].subTitle
+            : widget.subTitle,
         style: const TextStyle(
           fontSize: 14,
           color: Color(0xFF787878),

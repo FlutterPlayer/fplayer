@@ -83,11 +83,12 @@ class SamplesScreen extends StatelessWidget {
     return Scaffold(
       appBar: const FAppBar.defaultSetting(title: "Online Samples"),
       body: ListView.builder(
-          itemCount: samples.length,
-          itemBuilder: (BuildContext context, int index) {
-            MediaUrl mediaUrl = samples[index];
-            return MediaItem(mediaUrl: mediaUrl);
-          }),
+        itemCount: samples.length,
+        itemBuilder: (BuildContext context, int index) {
+          MediaUrl mediaUrl = samples[index];
+          return MediaItem(mediaUrl: mediaUrl);
+        },
+      ),
     );
   }
 }
