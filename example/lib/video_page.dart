@@ -16,6 +16,7 @@ class VideoScreen extends StatefulWidget {
 class VideoScreenState extends State<VideoScreen> {
   final FPlayer player = FPlayer();
 
+  // 视频列表
   List<VideoItem> videoList = [
     VideoItem(
       title: '第一集',
@@ -53,6 +54,24 @@ class VideoScreenState extends State<VideoScreen> {
       url: 'http://player.alicdn.com/video/aliyunmedia.mp4',
     )
   ];
+
+  Map<String, double> speedList = {
+    "2.0": 2.0,
+    "1.5": 1.5,
+    "1.0": 1.0,
+    "0.5": 0.5,
+  };
+
+  Map<String, ResolutionItem> resolutionList = {
+    "480P": ResolutionItem(
+      value: 480,
+      url: 'https://www.runoob.com/try/demo_source/mov_bbb.mp4',
+    ),
+    "270P": ResolutionItem(
+      value: 270,
+      url: 'http://player.alicdn.com/video/aliyunmedia.mp4',
+    ),
+  };
 
   int videoIndex = 0;
 
@@ -114,8 +133,9 @@ class VideoScreenState extends State<VideoScreen> {
               subTitle: '视频副标题',
               // 右下方截屏按钮
               snapShot: true,
-              // 右上方按钮组
+              // 右上方按钮组开关
               rightButton: true,
+              // 右上方按钮组
               rightButtonList: [
                 InkWell(
                   onTap: () {},
@@ -150,79 +170,82 @@ class VideoScreenState extends State<VideoScreen> {
                   ),
                 )
               ],
-              caption: true,
-              // 视频列表配置
-              // videos: true,
-              // videoMap: videoList,
-              // videoIndex: videoIndex,
-              // playNextVideoFun: () {
-              //   setState(() {
-              //     videoIndex += 1;
-              //   });
-              // },
+              // 字幕功能：待内核提供api
+              // caption: true,
+              // 视频列表开关
+              videos: true,
+              // 视频列表列表
+              videoMap: videoList,
+              // 当前视频索引
+              videoIndex: videoIndex,
+              // 播放下一集视频回调
+              playNextVideoFun: () {
+                setState(() {
+                  videoIndex += 1;
+                });
+              },
               settingFun: () {
                 print('设置按钮点击事件');
               },
-              captionFun: () {
-                print('字幕按钮点击事件');
-              },
+              // 自定义倍速列表
+              speedList: speedList,
+              // 清晰度开关
               resolution: true,
-              resolutionFun: () {
-                print('清晰度按钮点击事件');
-              },
+              // 自定义清晰度列表
+              resolutionList: resolutionList,
             ),
           ),
           // 自定义小屏列表
-          // Container(
-          //   width: double.infinity,
-          //   height: 30,
-          //   margin: const EdgeInsets.all(20),
-          //   child: ListView.builder(
-          //     scrollDirection: Axis.horizontal,
-          //     padding: EdgeInsets.zero,
-          //     itemCount: videoList.length,
-          //     itemBuilder: (context, index) {
-          //       bool isCurrent = videoIndex == index;
-          //       Color textColor = Theme.of(context).primaryColor;
-          //       Color bgColor = Theme.of(context).primaryColorDark;
-          //       Color borderColor = Theme.of(context).primaryColor;
-          //       if (isCurrent) {
-          //         textColor = Theme.of(context).primaryColorDark;
-          //         bgColor = Theme.of(context).primaryColor;
-          //         borderColor = Theme.of(context).primaryColor;
-          //       }
-          //       return GestureDetector(
-          //         onTap: () async {
-          //           await player.reset();
-          //           setState(() {
-          //             videoIndex = index;
-          //           });
-          //           setVideoUrl(videoList[index].url);
-          //         },
-          //         child: Container(
-          //           margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
-          //           padding: const EdgeInsets.symmetric(horizontal: 5),
-          //           decoration: BoxDecoration(
-          //             borderRadius: BorderRadius.circular(5),
-          //             color: bgColor,
-          //             border: Border.all(
-          //               width: 1.5,
-          //               color: borderColor,
-          //             ),
-          //           ),
-          //           alignment: Alignment.center,
-          //           child: Text(
-          //             videoList[index].title,
-          //             style: TextStyle(
-          //               fontSize: 15,
-          //               color: textColor,
-          //             ),
-          //           ),
-          //         ),
-          //       );
-          //     },
-          //   ),
-          // ),
+          Container(
+            width: double.infinity,
+            height: 30,
+            margin: const EdgeInsets.all(20),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              itemCount: videoList.length,
+              itemBuilder: (context, index) {
+                bool isCurrent = videoIndex == index;
+                Color textColor = Theme.of(context).primaryColor;
+                Color bgColor = Theme.of(context).primaryColorDark;
+                Color borderColor = Theme.of(context).primaryColor;
+                if (isCurrent) {
+                  textColor = Theme.of(context).primaryColorDark;
+                  bgColor = Theme.of(context).primaryColor;
+                  borderColor = Theme.of(context).primaryColor;
+                }
+                return GestureDetector(
+                  onTap: () async {
+                    await player.reset();
+                    setState(() {
+                      videoIndex = index;
+                    });
+                    setVideoUrl(videoList[index].url);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      color: bgColor,
+                      border: Border.all(
+                        width: 1.5,
+                        color: borderColor,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      videoList[index].title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );

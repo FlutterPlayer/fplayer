@@ -19,7 +19,7 @@ FPanelWidgetBuilder fPanel2Builder({
 
   /// 视频副标题
   final String subTitle = '',
-  final int duration = 4000,
+  final int duration = 5000,
   final bool doubleTap = true,
 
   /// 中间区域右上方按钮是否展示
@@ -34,18 +34,17 @@ FPanelWidgetBuilder fPanel2Builder({
   /// 字幕按钮是否展示
   final bool caption = false,
 
-  /// 字幕点击事件
-  final void Function()? captionFun,
+  /// 倍速列表,注意这里一定要包含1倍速
+  final Map<String, double>? speedList,
 
   /// 清晰度按钮是否展示
   final bool resolution = false,
 
-  /// 清晰度点击事件
-  final void Function()? resolutionFun,
+  /// 清晰度列表
+  final Map<String, ResolutionItem>? resolutionList,
 
   /// 设置点击事件
   final void Function()? settingFun,
-  // final VoidCallback? onBack,
 }) {
   return (FPlayer player, FData data, BuildContext context, Size viewSize,
       Rect texturePos) {
@@ -53,7 +52,6 @@ FPanelWidgetBuilder fPanel2Builder({
       key: key,
       player: player,
       data: data,
-      // onBack: onBack,
       videos: videos,
       title: title,
       subTitle: subTitle,
@@ -69,9 +67,9 @@ FPanelWidgetBuilder fPanel2Builder({
       snapShot: snapShot,
       hideDuration: duration,
       caption: caption,
-      captionFun: captionFun,
+      speedList: speedList,
       resolution: resolution,
-      resolutionFun: resolutionFun,
+      resolutionList: resolutionList,
       settingFun: settingFun,
     );
   };
@@ -88,10 +86,18 @@ class VideoItem {
   });
 }
 
+class ResolutionItem {
+  int value;
+  String url;
+  ResolutionItem({
+    required this.value,
+    required this.url,
+  });
+}
+
 class _FPanel2 extends StatefulWidget {
   final FPlayer player;
   final FData data;
-  // final VoidCallback? onBack;
   final bool videos;
   final String title;
   final String subTitle;
@@ -107,9 +113,9 @@ class _FPanel2 extends StatefulWidget {
   final bool snapShot;
   final int hideDuration;
   final bool caption;
-  final void Function()? captionFun;
+  final Map<String, double>? speedList;
   final bool resolution;
-  final void Function()? resolutionFun;
+  final Map<String, ResolutionItem>? resolutionList;
   final void Function()? settingFun;
 
   const _FPanel2({
@@ -117,9 +123,8 @@ class _FPanel2 extends StatefulWidget {
     required this.player,
     required this.data,
     this.fill = false,
-    // this.onBack,
     required this.viewSize,
-    this.hideDuration = 4000,
+    this.hideDuration = 5000,
     this.doubleTap = false,
     this.snapShot = false,
     required this.texPos,
@@ -131,11 +136,11 @@ class _FPanel2 extends StatefulWidget {
     this.rightButton = false,
     this.caption = false,
     this.resolution = false,
-    this.captionFun,
-    this.resolutionFun,
     this.settingFun,
     this.videoIndex = 0,
     this.playNextVideoFun,
+    this.resolutionList,
+    this.speedList,
   })  : assert(hideDuration > 0 && hideDuration < 10000),
         super(key: key);
 
@@ -165,10 +170,42 @@ class __FPanel2State extends State<_FPanel2> {
   bool hideSpeed = true;
   double speed = 1.0;
 
+  bool hideCaption = true;
+  bool caption = false;
+
+  bool hideResolution = true;
+  int resolution = 0;
+
+  bool longPress = false;
+
   Map<String, double> speedList = {
     "2.0": 2.0,
     "1.5": 1.5,
     "1.0": 1.0,
+  };
+
+  Map<String, bool> captionList = {
+    "开": true,
+    "关": false,
+  };
+
+  Map<String, ResolutionItem> resolutionList = {
+    "1080P": ResolutionItem(
+      value: 1080,
+      url: "https://www.runoob.com/try/demo_source/mov_bbb.mp4",
+    ),
+    "720P": ResolutionItem(
+      value: 720,
+      url: "http://player.alicdn.com/video/aliyunmedia.mp4",
+    ),
+    "480P": ResolutionItem(
+      value: 480,
+      url: "https://www.runoob.com/try/demo_source/mov_bbb.mp4",
+    ),
+    "360P": ResolutionItem(
+      value: 360,
+      url: "http://player.alicdn.com/video/aliyunmedia.mp4",
+    ),
   };
 
   StreamSubscription? _currentPosSubs;
@@ -203,6 +240,11 @@ class __FPanel2State extends State<_FPanel2> {
   @override
   void initState() {
     super.initState();
+
+    // 初始化resolution
+    Map<String, ResolutionItem> obj = widget.resolutionList ?? resolutionList;
+
+    resolution = obj.values.toList().first.value;
 
     // connectTypeListener = Connectivity()
     //     .onConnectivityChanged
@@ -318,6 +360,7 @@ class __FPanel2State extends State<_FPanel2> {
       setState(() {
         _hideStuff = true;
         hideSpeed = true;
+        hideCaption = true;
       });
     });
   }
@@ -330,6 +373,7 @@ class __FPanel2State extends State<_FPanel2> {
       _hideStuff = !_hideStuff;
       if (_hideStuff == true) {
         hideSpeed = true;
+        hideCaption = true;
       }
     });
   }
@@ -365,6 +409,20 @@ class __FPanel2State extends State<_FPanel2> {
 
   void onDoubleTapFun() {
     playOrPause();
+  }
+
+  void onLongPressFun() {
+    player.setSpeed(2.0);
+    setState(() {
+      longPress = true;
+    });
+  }
+
+  void onLongPressUpFun() {
+    player.setSpeed(speed);
+    setState(() {
+      longPress = false;
+    });
   }
 
   void onVerticalDragStartFun(DragStartDetails d) {
@@ -449,7 +507,6 @@ class __FPanel2State extends State<_FPanel2> {
 
   /// 快进视频松手开始跳时间
   void onVideoTimeChangeEnd(double value) {
-    print('value:$value');
     var time = _seekPos.toInt();
     _currentPos = Duration(milliseconds: time);
     player.seekTo(time).then((value) {
@@ -509,7 +566,17 @@ class __FPanel2State extends State<_FPanel2> {
       children: [
         if (widget.caption)
           TextButton(
-            onPressed: widget.captionFun,
+            onPressed: () {
+              setState(() {
+                if (hideSpeed == false) {
+                  hideSpeed = true;
+                }
+                if (hideResolution == false) {
+                  hideResolution = true;
+                }
+                hideCaption = !hideCaption;
+              });
+            },
             child: Text(
               '字幕',
               style: TextStyle(
@@ -520,6 +587,12 @@ class __FPanel2State extends State<_FPanel2> {
         TextButton(
           onPressed: () {
             setState(() {
+              if (hideCaption == false) {
+                hideCaption = true;
+              }
+              if (hideResolution == false) {
+                hideResolution = true;
+              }
               hideSpeed = !hideSpeed;
             });
           },
@@ -532,9 +605,17 @@ class __FPanel2State extends State<_FPanel2> {
         ),
         if (widget.resolution)
           TextButton(
-            onPressed: widget.resolutionFun,
+            onPressed: () {
+              if (hideCaption == false) {
+                hideCaption = true;
+              }
+              if (hideSpeed == false) {
+                hideSpeed = true;
+              }
+              hideResolution = !hideResolution;
+            },
             child: Text(
-              '自动',
+              '${resolution}P',
               style: TextStyle(
                 color: Theme.of(context).primaryColorDark,
               ),
@@ -544,9 +625,58 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  // 字幕开关
+  List<Widget> buildCaptionListWidget() {
+    List<Widget> columnChild = [];
+    captionList.forEach((String mapKey, bool captionVals) {
+      columnChild.add(
+        Ink(
+          child: InkWell(
+            onTap: () {
+              if (caption == captionVals) return;
+              setState(() {
+                caption = captionVals;
+                hideCaption = true;
+                // player.setCaption(captionVals);
+              });
+            },
+            child: Container(
+              alignment: Alignment.center,
+              width: 50,
+              height: 30,
+              child: Text(
+                mapKey,
+                style: TextStyle(
+                  color: caption == captionVals
+                      ? Theme.of(context).primaryColor
+                      : Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      columnChild.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 5, bottom: 5),
+          child: Container(
+            width: 50,
+            height: 1,
+            color: Colors.white54,
+          ),
+        ),
+      );
+    });
+    columnChild.removeAt(columnChild.length - 1);
+    return columnChild;
+  }
+
+  // 倍速选择
   List<Widget> buildSpeedListWidget() {
     List<Widget> columnChild = [];
-    speedList.forEach((String mapKey, double speedVals) {
+    Map<String, double> obj = widget.speedList ?? speedList;
+    obj.forEach((String mapKey, double speedVals) {
       columnChild.add(
         Ink(
           child: InkWell(
@@ -566,6 +696,64 @@ class __FPanel2State extends State<_FPanel2> {
                 "${mapKey}X",
                 style: TextStyle(
                   color: speed == speedVals
+                      ? Theme.of(context).primaryColor
+                      : Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      columnChild.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 5, bottom: 5),
+          child: Container(
+            width: 50,
+            height: 1,
+            color: Colors.white54,
+          ),
+        ),
+      );
+    });
+    columnChild.removeAt(columnChild.length - 1);
+    return columnChild;
+  }
+
+  // 清晰度选择
+  List<Widget> buildResolutionListWidget() {
+    List<Widget> columnChild = [];
+    Map<String, ResolutionItem> obj = widget.resolutionList ?? resolutionList;
+    obj.forEach((String mapKey, ResolutionItem resolutionItem) {
+      columnChild.add(
+        Ink(
+          child: InkWell(
+            onTap: () async {
+              if (resolution == resolutionItem.value) return;
+              await player.reset();
+              try {
+                await player.setDataSource(
+                  resolutionItem.url,
+                  autoPlay: true,
+                  showCover: true,
+                );
+                setState(() {
+                  resolution = resolutionItem.value;
+                  hideResolution = true;
+                });
+              } catch (error) {
+                print("播放-异常: $error");
+                return;
+              }
+            },
+            child: Container(
+              alignment: Alignment.center,
+              width: 50,
+              height: 30,
+              child: Text(
+                mapKey,
+                style: TextStyle(
+                  color: resolution == resolutionItem.value
                       ? Theme.of(context).primaryColor
                       : Colors.white,
                   fontSize: 16,
@@ -903,9 +1091,29 @@ class __FPanel2State extends State<_FPanel2> {
                 alignment: Alignment.centerLeft,
                 child: leftWidget,
               ),
+              // 字幕开关
+              Positioned(
+                right: 170,
+                bottom: 0,
+                child: Visibility(
+                  visible: !hideCaption,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        children: buildCaptionListWidget(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               // 倍数选择
               Positioned(
-                right: 100,
+                right: 105,
                 bottom: 0,
                 child: Visibility(
                   visible: !hideSpeed,
@@ -918,6 +1126,26 @@ class __FPanel2State extends State<_FPanel2> {
                       padding: const EdgeInsets.all(10),
                       child: Column(
                         children: buildSpeedListWidget(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // 倍数选择
+              Positioned(
+                right: 50,
+                bottom: 0,
+                child: Visibility(
+                  visible: !hideResolution,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        children: buildResolutionListWidget(),
                       ),
                     ),
                   ),
@@ -956,6 +1184,27 @@ class __FPanel2State extends State<_FPanel2> {
     );
   }
 
+  Widget buildLongPress() {
+    return Offstage(
+      offstage: !longPress,
+      child: Container(
+        margin: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color.fromRGBO(0, 0, 0, .2),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: const Text(
+          "2倍速播放中",
+          style: TextStyle(
+            color: Color.fromRGBO(255, 255, 255, .8),
+            fontSize: 15,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget buildDragProgressTime() {
     return Offstage(
       offstage: _seekPos == -1,
@@ -982,10 +1231,13 @@ class __FPanel2State extends State<_FPanel2> {
 
   GestureDetector buildGestureDetector(BuildContext context) {
     double currentValue = getCurrentVideoValue();
+    var playValue = player.value;
     return GestureDetector(
       onTap: onTapFun,
       behavior: HitTestBehavior.opaque,
       onDoubleTap: widget.doubleTap && !lock ? onDoubleTapFun : null,
+      onLongPressUp: _playing && !lock ? onLongPressUpFun : null,
+      onLongPress: _playing && !lock ? onLongPressFun : null,
       onVerticalDragUpdate: !lock ? onVerticalDragUpdateFun : null,
       onVerticalDragStart: !lock ? onVerticalDragStartFun : null,
       onVerticalDragEnd: !lock ? onVerticalDragEndFun : null,
@@ -1012,9 +1264,13 @@ class __FPanel2State extends State<_FPanel2> {
             ),
           ),
           Align(
+            alignment: Alignment.topCenter,
+            child: buildLongPress(),
+          ),
+          Align(
             alignment: Alignment.center,
             child: buildDragProgressTime(),
-          )
+          ),
         ],
       ),
     );
@@ -1290,9 +1546,6 @@ class __FPanel2State extends State<_FPanel2> {
       ws.add(buildStateless());
     }
     ws.add(buildGestureDetector(context));
-    // if (widget.onBack != null) {
-    //   ws.add(buildBack(context));
-    // }
     return Positioned.fromRect(
       rect: rect,
       child: Stack(children: ws as List<Widget>),
