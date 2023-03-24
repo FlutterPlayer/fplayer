@@ -18,6 +18,9 @@ dependencies:
   # 电量获取
   battery_plus: ^3.0.2
 
+  # 设备亮度
+  screen_brightness: ^0.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
