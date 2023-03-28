@@ -9,6 +9,7 @@ import 'dart:math';
 import 'package:battery_plus/battery_plus.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

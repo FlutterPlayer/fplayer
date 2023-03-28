@@ -45,6 +45,18 @@ FPanelWidgetBuilder fPanel2Builder({
 
   /// 设置点击事件
   final void Function()? settingFun,
+
+  /// 视频错误点击刷新
+  final void Function()? onError,
+
+  /// 视频结束
+  final void Function()? onVideoEnd,
+
+  /// 视频完成后台任务到稳定期
+  final void Function()? onVideoPrepared,
+
+  /// 视频时间更新
+  final void Function()? onVideoTimeChange,
 }) {
   return (FPlayer player, FData data, BuildContext context, Size viewSize,
       Rect texturePos) {
@@ -71,6 +83,10 @@ FPanelWidgetBuilder fPanel2Builder({
       resolution: resolution,
       resolutionList: resolutionList,
       settingFun: settingFun,
+      onError: onError,
+      onVideoEnd: onVideoEnd,
+      onVideoPrepared: onVideoPrepared,
+      onVideoTimeChange: onVideoTimeChange,
     );
   };
 }
@@ -117,6 +133,10 @@ class _FPanel2 extends StatefulWidget {
   final bool resolution;
   final Map<String, ResolutionItem>? resolutionList;
   final void Function()? settingFun;
+  final void Function()? onError;
+  final void Function()? onVideoEnd;
+  final void Function()? onVideoPrepared;
+  final void Function()? onVideoTimeChange;
 
   const _FPanel2({
     Key? key,
@@ -141,6 +161,10 @@ class _FPanel2 extends StatefulWidget {
     this.playNextVideoFun,
     this.resolutionList,
     this.speedList,
+    this.onError,
+    this.onVideoEnd,
+    this.onVideoPrepared,
+    this.onVideoTimeChange,
   })  : assert(hideDuration > 0 && hideDuration < 10000),
         super(key: key);
 
@@ -178,6 +202,22 @@ class __FPanel2State extends State<_FPanel2> {
 
   bool longPress = false;
 
+  /// 视频错误
+  bool _isPlayError = false;
+
+  /// 是否播放完成
+  bool _isPlayCompleted = false;
+
+  /// 视频状态是否执行完成成为稳定状态与_prepared不一致
+  bool _playStatePrepared = false;
+
+  /// 是否在加载中
+  bool _buffering = false;
+  int _bufferingPro = 0;
+  late StreamSubscription _bufferingSubs;
+
+  int sendCount = 0;
+
   Map<String, double> speedList = {
     "2.0": 2.0,
     "1.5": 1.5,
@@ -210,6 +250,7 @@ class __FPanel2State extends State<_FPanel2> {
 
   StreamSubscription? _currentPosSubs;
   StreamSubscription? _bufferPosSubs;
+  late StreamSubscription<int> _bufferPercunt;
 
   late StreamController<double> _valController;
 
@@ -269,24 +310,37 @@ class __FPanel2State extends State<_FPanel2> {
     });
 
     _valController = StreamController.broadcast();
-    _prepared = player.state.index >= FState.prepared.index;
-    _playing = player.state == FState.started;
+
+    var playerState = player.state;
+    _prepared = player.value.prepared;
     _duration = player.value.duration;
     _currentPos = player.currentPos;
     _bufferPos = player.bufferPos;
+    _buffering = player.isBuffering;
+    _playing = playerState == FState.started;
+    _isPlayError = playerState == FState.error;
+    _isPlayCompleted = playerState == FState.completed;
 
+    /// 当前进度
     _currentPosSubs = player.onCurrentPosUpdate.listen((v) {
-      if (_hideStuff == false) {
-        setState(() {
-          _currentPos = v;
-        });
-      } else {
+      setState(() {
         _currentPos = v;
-      }
+        if (_buffering == true) {
+          _buffering = false; // 避免有可能出现已经播放时还在显示缓冲中
+        }
+        if (_playing == false) {
+          _playing = true; // 避免播放在false时导致bug
+        }
+      });
       if (_needClearSeekData) {
         widget.data.clearValue(FData._fViewPanelSeekto);
       }
       _needClearSeekData = false;
+      // 每n次才进入一次不然太频繁发送处理业务太复杂则会增加消耗
+      if (sendCount % 50 == 0) {
+        widget.onVideoTimeChange?.call();
+      }
+      sendCount++;
     });
 
     if (widget.data.contains(FData._fViewPanelSeekto)) {
@@ -294,6 +348,7 @@ class __FPanel2State extends State<_FPanel2> {
       _currentPos = Duration(milliseconds: pos.toInt());
     }
 
+    /// 视频加载进度
     _bufferPosSubs = player.onBufferPosUpdate.listen((v) {
       if (_hideStuff == false) {
         setState(() {
@@ -302,6 +357,24 @@ class __FPanel2State extends State<_FPanel2> {
       } else {
         _bufferPos = v;
       }
+    });
+
+    /// 视频卡顿回调
+    _bufferingSubs = player.onBufferStateUpdate.listen((value) {
+      print("视频加载中$value");
+      if (value == false && _playing == false) {
+        playOrPause();
+      }
+      setState(() {
+        _buffering = value;
+      });
+    });
+
+    /// 视频卡顿当缓冲量回调
+    _bufferPercunt = player.onBufferPercentUpdate.listen((value) {
+      setState(() {
+        _bufferingPro = value;
+      });
     });
 
     player.addListener(_playerValueChanged);
@@ -316,6 +389,8 @@ class __FPanel2State extends State<_FPanel2> {
     _snapshotTimer?.cancel();
     _currentPosSubs?.cancel();
     _bufferPosSubs?.cancel();
+    _bufferPercunt.cancel();
+    _bufferingSubs.cancel();
     // connectTypeListener?.cancel();
     batteryStateListener?.cancel();
     player.removeListener(_playerValueChanged);
@@ -342,15 +417,41 @@ class __FPanel2State extends State<_FPanel2> {
         _duration = value.duration;
       });
     }
-    bool playing = (value.state == FState.started);
+
+    var valueState = value.state;
+    bool playing = valueState == FState.started;
     bool prepared = value.prepared;
-    if (playing != _playing ||
+    bool isPlayError = valueState == FState.error;
+    bool completed = valueState == FState.completed;
+    if (isPlayError != _isPlayError ||
+        playing != _playing ||
         prepared != _prepared ||
-        value.state == FState.asyncPreparing) {
+        completed != _isPlayCompleted) {
       setState(() {
+        _isPlayError = isPlayError;
         _playing = playing;
         _prepared = prepared;
+        _isPlayCompleted = completed;
       });
+    }
+
+    /// 视频初始化完毕后回调
+    bool playStatePrepared = valueState == FState.prepared;
+    if (_playStatePrepared != playStatePrepared) {
+      if (playStatePrepared) {
+        widget.onVideoPrepared?.call();
+      }
+      _playStatePrepared = playStatePrepared;
+    }
+
+    /// 播放完成是否播放下一集
+    bool isPlayCompleted = valueState == FState.completed;
+    if (isPlayCompleted) {
+      if (widget.videos && widget.videoMap!.length - 1 > widget.videoIndex) {
+        widget.onVideoEnd?.call();
+      } else {
+        _isPlayCompleted = isPlayCompleted;
+      }
     }
   }
 
@@ -1231,7 +1332,31 @@ class __FPanel2State extends State<_FPanel2> {
 
   GestureDetector buildGestureDetector(BuildContext context) {
     double currentValue = getCurrentVideoValue();
-    var playValue = player.value;
+    Widget videoLoading = Container(); // 视频缓冲
+    if (_buffering) {
+      videoLoading = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Container(
+            width: 25,
+            height: 25,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: const CircularProgressIndicator(
+              backgroundColor: Color.fromRGBO(250, 250, 250, 0.5),
+              valueColor: AlwaysStoppedAnimation(Colors.white70),
+            ),
+          ),
+          Text(
+            "缓冲中 $_bufferingPro %",
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
     return GestureDetector(
       onTap: onTapFun,
       behavior: HitTestBehavior.opaque,
@@ -1266,6 +1391,10 @@ class __FPanel2State extends State<_FPanel2> {
           Align(
             alignment: Alignment.topCenter,
             child: buildLongPress(),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: videoLoading,
           ),
           Align(
             alignment: Alignment.center,
@@ -1497,13 +1626,60 @@ class __FPanel2State extends State<_FPanel2> {
           ),
         ),
       );
-    } else if (player.state == FState.error) {
+    } else if (_isPlayError) {
       return Container(
         alignment: Alignment.center,
-        child: const Icon(
-          Icons.error,
-          size: 30,
-          color: Color(0x99FFFFFF),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.only(bottom: 15),
+              child: Icon(
+                Icons.error_rounded,
+                color: Colors.white70,
+                size: 70,
+              ),
+            ),
+            RichText(
+              text: TextSpan(
+                text: "播放异常！",
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: "刷新",
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        widget.onError?.call();
+                      },
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (!player.value.videoRenderStart) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+            color: Color.fromRGBO(0, 0, 0, 0.5),
+          ),
+          child: const SizedBox(
+            width: 50,
+            height: 50,
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(Colors.white),
+            ),
+          ),
         ),
       );
     } else if (_imageProvider != null) {
@@ -1534,7 +1710,7 @@ class __FPanel2State extends State<_FPanel2> {
   Widget build(BuildContext context) {
     Rect rect = panelRect();
 
-    List ws = <Widget>[];
+    List<Widget> ws = [];
 
     if (_statelessTimer != null && _statelessTimer!.isActive) {
       ws.add(buildStateless());
@@ -1542,13 +1718,16 @@ class __FPanel2State extends State<_FPanel2> {
       ws.add(buildStateless());
     } else if (player.state == FState.error) {
       ws.add(buildStateless());
+    } else if (!player.value.videoRenderStart) {
+      ws.add(buildStateless());
     } else if (_imageProvider != null) {
       ws.add(buildStateless());
+    } else {
+      ws.add(buildGestureDetector(context));
     }
-    ws.add(buildGestureDetector(context));
     return Positioned.fromRect(
       rect: rect,
-      child: Stack(children: ws as List<Widget>),
+      child: Stack(children: ws),
     );
   }
 }

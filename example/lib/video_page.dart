@@ -56,6 +56,7 @@ class VideoScreenState extends State<VideoScreen> {
     )
   ];
 
+  // 倍速列表
   Map<String, double> speedList = {
     "2.0": 2.0,
     "1.5": 1.5,
@@ -63,6 +64,7 @@ class VideoScreenState extends State<VideoScreen> {
     "0.5": 0.5,
   };
 
+  // 清晰度列表
   Map<String, ResolutionItem> resolutionList = {
     "480P": ResolutionItem(
       value: 480,
@@ -74,19 +76,22 @@ class VideoScreenState extends State<VideoScreen> {
     ),
   };
 
+  // 视频索引,单个视频可不传
   int videoIndex = 0;
+
+  // 模拟播放记录视频初始化完需要跳转的进度
+  int seekTime = 100000;
 
   VideoScreenState();
 
   @override
   void initState() {
     super.initState();
-    player.setOption(FOption.hostCategory, "enable-snapshot", 1);
-    player.setOption(FOption.playerCategory, "mediacodec-all-videos", 1);
     startPlay();
   }
 
   void startPlay() async {
+    // 视频播放相关配置
     await player.setOption(FOption.hostCategory, "enable-snapshot", 1);
     await player.setOption(FOption.hostCategory, "request-screen-on", 1);
     await player.setOption(FOption.hostCategory, "request-audio-focus", 1);
@@ -194,6 +199,41 @@ class VideoScreenState extends State<VideoScreen> {
               resolution: true,
               // 自定义清晰度列表
               resolutionList: resolutionList,
+              // 视频播放错误点击刷新回调
+              onError: () async {
+                await player.reset();
+                print('重新播放');
+                setVideoUrl(videoList[videoIndex].url);
+              },
+              // 视频播放错误点击刷新回调
+              onVideoEnd: () async {
+                // 视频结束最后一集的时候会有个UI层显示出来可以触发重新开始
+                var index = videoIndex + 1;
+                if (index < videoList.length) {
+                  await player.reset();
+                  setState(() {
+                    videoIndex = index;
+                  });
+                  setVideoUrl(videoList[index].url);
+                }
+              },
+              onVideoTimeChange: () {
+                // 视频时间变动则触发一次，可以保存视频历史如不想频繁触发则在里修改 sendCount % 50 == 0
+              },
+              onVideoPrepared: () async {
+                // 视频初始化完毕，如有历史记录时间段则可以触发快进
+                try {
+                  if (seekTime >= 1) {
+                    /// seekTo必须在FState.prepared
+                    print('seekTo');
+                    await player.seekTo(seekTime);
+                    // print("视频快进-$seekTime");
+                    seekTime = 0;
+                  }
+                } catch (error) {
+                  print("视频初始化完快进-异常: $error");
+                }
+              },
             ),
           ),
           // 自定义小屏列表
