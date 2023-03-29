@@ -165,7 +165,7 @@ class _DefaultFPanelState extends State<_DefaultFPanel> {
     }
     return IconButton(
       icon: Icon(iconData),
-      padding: EdgeInsets.only(left: 10.0, right: 10.0),
+      padding: const EdgeInsets.only(left: 10.0, right: 10.0),
       onPressed: () {
         setState(() {
           _volume = _volume > 0 ? 0.0 : 1.0;

@@ -1,6 +1,6 @@
 part of fplayer;
 
-FPanelWidgetBuilder fPanel2Builder({
+FPanelWidgetBuilder fPanelBuilder({
   Key? key,
   final bool fill = false,
 
@@ -1600,20 +1600,7 @@ class __FPanel2State extends State<_FPanel2> {
   }
 
   Widget buildStateless() {
-    var volume = _volume;
-    var brightness = _brightness;
-    if (volume != null || brightness != null) {
-      Widget toast = volume == null
-          ? defaultFBrightnessToast(brightness!, _valController.stream)
-          : defaultFVolumeToast(volume, _valController.stream);
-      return IgnorePointer(
-        child: AnimatedOpacity(
-          opacity: 1,
-          duration: const Duration(milliseconds: 500),
-          child: toast,
-        ),
-      );
-    } else if (player.state == FState.asyncPreparing) {
+    if (player.state == FState.asyncPreparing) {
       return Container(
         alignment: Alignment.center,
         child: SizedBox(
@@ -1712,9 +1699,7 @@ class __FPanel2State extends State<_FPanel2> {
 
     List<Widget> ws = [];
 
-    if (_statelessTimer != null && _statelessTimer!.isActive) {
-      ws.add(buildStateless());
-    } else if (player.state == FState.asyncPreparing) {
+    if (player.state == FState.asyncPreparing) {
       ws.add(buildStateless());
     } else if (player.state == FState.error) {
       ws.add(buildStateless());
@@ -1723,8 +1708,25 @@ class __FPanel2State extends State<_FPanel2> {
     } else if (_imageProvider != null) {
       ws.add(buildStateless());
     } else {
+      var volume = _volume;
+      var brightness = _brightness;
+      if (volume != null || brightness != null) {
+        Widget toast = volume == null
+            ? defaultFBrightnessToast(brightness!, _valController.stream)
+            : defaultFVolumeToast(volume, _valController.stream);
+        ws.add(
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: 1,
+              duration: const Duration(milliseconds: 500),
+              child: toast,
+            ),
+          ),
+        );
+      }
       ws.add(buildGestureDetector(context));
     }
+
     return Positioned.fromRect(
       rect: rect,
       child: Stack(children: ws),

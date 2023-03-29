@@ -133,7 +133,7 @@ class VideoScreenState extends State<VideoScreen> {
             color: Colors.black,
             fsFit: FFit.contain, // 全屏模式下的填充
             fit: FFit.fill, // 正常模式下的填充
-            panelBuilder: fPanel2Builder(
+            panelBuilder: fPanelBuilder(
               // 单视频配置
               title: '视频标题',
               subTitle: '视频副标题',
