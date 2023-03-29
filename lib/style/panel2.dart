@@ -178,7 +178,6 @@ class __FPanel2State extends State<_FPanel2> {
   Timer? _hideTimer;
   bool _hideStuff = true;
 
-  Timer? _statelessTimer;
   bool _prepared = false;
   bool _playing = false;
   bool _dragLeft = false;
@@ -385,7 +384,6 @@ class __FPanel2State extends State<_FPanel2> {
     super.dispose();
     _valController.close();
     _hideTimer?.cancel();
-    _statelessTimer?.cancel();
     _snapshotTimer?.cancel();
     _currentPosSubs?.cancel();
     _bufferPosSubs?.cancel();
@@ -552,10 +550,6 @@ class __FPanel2State extends State<_FPanel2> {
         });
       });
     }
-    _statelessTimer?.cancel();
-    _statelessTimer = Timer(const Duration(milliseconds: 2000), () {
-      setState(() {});
-    });
   }
 
   void onVerticalDragUpdateFun(DragUpdateDetails d) {
