@@ -51,10 +51,10 @@ class FVolume {
   /// always show system volume changed UI
   static const int alwaysShowUI = 3;
 
-  static FVolume _instance = FVolume._();
+  static final FVolume _instance = FVolume._();
 
   static final _VolumeValueNotifier _notifier =
-      _VolumeValueNotifier(FVolumeEvent(vol: 0, sui: false, type: 0));
+      _VolumeValueNotifier(const FVolumeEvent(vol: 0, sui: false, type: 0));
 
   static const double _defaultStep = 1.0 / 16.0;
 
@@ -123,11 +123,12 @@ class FVolume {
   /// mode can be one of
   /// {[hideUIWhenPlayable], [hideUIWhenPlaying], [neverShowUI], [alwaysShowUI]}
   static Future<void> setUIMode(int mode) {
-    if (mode < hideUIWhenPlayable || hideUIWhenPlayable > alwaysShowUI)
+    if (mode < hideUIWhenPlayable || hideUIWhenPlayable > alwaysShowUI) {
       return Future.error(ArgumentError.notNull("mode"));
-    else
+    } else {
       return FPlugin._channel
           .invokeMethod("volUiMode", <String, dynamic>{'mode': mode});
+    }
   }
 
   void _onVolCallback(double vol, bool ui) {
@@ -173,11 +174,12 @@ class FVolumeWatcher extends StatefulWidget {
   /// The default toast ui insert an OverlayEntry to current context's overlay
   final bool showToast;
 
-  FVolumeWatcher({
+  const FVolumeWatcher({
+    super.key,
     required this.watcher,
     /*required*/ required this.child,
-    bool showToast = false,
-  }) : showToast = showToast;
+    this.showToast = false,
+  });
 
   @override
   _FVolumeWatcherState createState() => _FVolumeWatcherState();

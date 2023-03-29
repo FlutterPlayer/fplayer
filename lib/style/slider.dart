@@ -22,8 +22,8 @@
 
 part of fplayer;
 
-/// FijkSlider is like Slider in Flutter SDK.
-/// FijkSlider support [cacheValue] which can be used
+/// FSlider is like Slider in Flutter SDK.
+/// FSlider support [cacheValue] which can be used
 /// to show the player's cached buffer.
 /// The [colors] is used to make colorful painter to draw the line and circle.
 class FSlider extends StatefulWidget {
@@ -106,7 +106,7 @@ class _FSliderState extends State<FSlider> {
   }
 }
 
-/// Colors for the FijkSlider
+/// Colors for the FSlider
 class FSliderColors {
   const FSliderColors({
     this.playedColor = const Color.fromRGBO(255, 0, 0, 0.6),

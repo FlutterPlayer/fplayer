@@ -41,7 +41,7 @@ class FFit {
   ///  * (-3.0, -2.0) scaling up to [FView]'s height
   final double sizeFactor;
 
-  /// Fill the target FijkView box by distorting the video's aspect ratio.
+  /// Fill the target FView box by distorting the video's aspect ratio.
   static const FFit fill = FFit(
     sizeFactor: 1.0,
     aspectRatio: double.infinity,
@@ -49,14 +49,14 @@ class FFit {
   );
 
   /// As large as possible while still containing the video entirely within the
-  /// target FijkView box.
+  /// target FView box.
   static const FFit contain = FFit(
     sizeFactor: 1.0,
     aspectRatio: -1,
     alignment: Alignment.center,
   );
 
-  /// As small as possible while still covering the entire target FijkView box.
+  /// As small as possible while still covering the entire target FView box.
   static const FFit cover = FFit(
     sizeFactor: -0.5,
     aspectRatio: -1,
@@ -72,20 +72,21 @@ class FFit {
   static const FFit fitHeight = FFit(sizeFactor: -2.5);
 
   /// As large as possible while still containing the video entirely within the
-  /// target FijkView box. But change video's aspect ratio to 4:3.
+  /// target FView box. But change video's aspect ratio to 4:3.
   static const FFit ar4_3 = FFit(aspectRatio: 4.0 / 3.0);
 
   /// As large as possible while still containing the video entirely within the
-  /// target FijkView box. But change video's aspect ratio to 16:9.
+  /// target FView box. But change video's aspect ratio to 16:9.
   static const FFit ar16_9 = FFit(aspectRatio: 16.0 / 9.0);
 }
 
-/// [FView] is a widget that can display the video frame of [FijkPlayer].
+/// [FView] is a widget that can display the video frame of [FPlayer].
 ///
 /// Actually, it is a Container widget contains many children.
 /// The most important is a Texture which display the read video frame.
 class FView extends StatefulWidget {
-  FView({
+  const FView({
+    super.key,
     required this.player,
     this.width,
     this.height,
@@ -98,17 +99,17 @@ class FView extends StatefulWidget {
     this.onDispose,
   });
 
-  /// The player that need display video by this [FijkView].
+  /// The player that need display video by this [FView].
   /// Will be passed to [panelBuilder].
   final FPlayer player;
 
   /// builder to build panel Widget
   final FPanelWidgetBuilder panelBuilder;
 
-  /// This method will be called when fijkView dispose.
-  /// FijkData is managed inner FijkView. User can change fijkData in custom panel.
+  /// This method will be called when fView dispose.
+  /// FData is managed inner FView. User can change fData in custom panel.
   /// See [panelBuilder]'s second argument.
-  /// And check if some value need to be recover on FijkView dispose.
+  /// And check if some value need to be recover on FView dispose.
   final void Function(FData)? onDispose;
 
   /// background color
@@ -117,27 +118,27 @@ class FView extends StatefulWidget {
   /// cover image provider
   final ImageProvider? cover;
 
-  /// How a video should be inscribed into this [FijkView].
+  /// How a video should be inscribed into this [FView].
   final FFit fit;
 
-  /// How a video should be inscribed into this [FijkView] at fullScreen mode.
+  /// How a video should be inscribed into this [FView] at fullScreen mode.
   final FFit fsFit;
 
-  /// Nullable, width of [FijkView]
+  /// Nullable, width of [FView]
   /// If null, the weight will be as big as possible.
   final double? width;
 
-  /// Nullable, height of [FijkView].
+  /// Nullable, height of [FView].
   /// If null, the height will be as big as possible.
   final double? height;
 
   /// Enable or disable the full screen
   ///
-  /// If [fs] is true, FijkView make response to the [FijkValue.fullScreen] value changed,
-  /// and push o new full screen mode page when [FijkValue.fullScreen] is true, pop full screen page when [FijkValue.fullScreen]  become false.
+  /// If [fs] is true, FView make response to the [FValue.fullScreen] value changed,
+  /// and push o new full screen mode page when [FValue.fullScreen] is true, pop full screen page when [FValue.fullScreen]  become false.
   ///
-  /// If [fs] is false, FijkView never make response to the change of [FijkValue.fullScreen].
-  /// But you can still call [FijkPlayer.enterFullScreen] and [FijkPlayer.exitFullScreen] and make your own full screen pages.
+  /// If [fs] is false, FView never make response to the change of [FValue.fullScreen].
+  /// But you can still call [FPlayer.enterFullScreen] and [FPlayer.exitFullScreen] and make your own full screen pages.
   final bool fs;
 
   @override
@@ -178,7 +179,7 @@ class _FViewState extends State<FView> {
       FLog.e("failed to set surface");
       return;
     }
-    FLog.i("view setup, vid:" + vid.toString());
+    FLog.i("view setup, vid:$vid");
     if (mounted) {
       setState(() {
         _textureId = vid;
@@ -255,7 +256,7 @@ class _FViewState extends State<FView> {
   }
 
   Future<dynamic> _pushFullScreenWidget(BuildContext context) async {
-    final TransitionRoute<Null> route = PageRouteBuilder<Null>(
+    final TransitionRoute<void> route = PageRouteBuilder<void>(
       settings: const RouteSettings(),
       pageBuilder: _fullScreenRoutePageBuilder,
     );
@@ -265,11 +266,13 @@ class _FViewState extends State<FView> {
     var orientation = MediaQuery.of(context).orientation;
     FLog.d("start enter fullscreen. orientation:$orientation");
     if (_vWidth >= _vHeight) {
-      if (MediaQuery.of(context).orientation == Orientation.portrait)
+      if (orientation == Orientation.portrait) {
         changed = await FPlugin.setOrientationLandscape();
+      }
     } else {
-      if (MediaQuery.of(context).orientation == Orientation.landscape)
+      if (orientation == Orientation.landscape) {
         changed = await FPlugin.setOrientationPortrait();
+      }
     }
     FLog.d("screen orientation changed:$changed");
 
@@ -295,7 +298,7 @@ class _FViewState extends State<FView> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: widget.width,
       height: widget.height,
       child: _fullScreen
@@ -311,7 +314,7 @@ class _FViewState extends State<FView> {
 }
 
 class _InnerFView extends StatefulWidget {
-  _InnerFView({
+  const _InnerFView({
     required this.fViewState,
     required this.fullScreen,
     required this.cover,
@@ -354,7 +357,7 @@ class __InnerFViewState extends State<_InnerFView> {
 
   void _voidValueListener() {
     var binding = WidgetsBinding.instance;
-    if (binding != null) binding.addPostFrameCallback((_) => _fValueListener());
+    binding.addPostFrameCallback((_) => _fValueListener());
   }
 
   void _fValueListener() {
@@ -516,7 +519,7 @@ class __InnerFViewState extends State<_InnerFView> {
         Positioned.fromRect(
             rect: pos,
             child: Container(
-              color: Color(0xFF000000),
+              color: const Color(0xFF000000),
               child: buildTexture(),
             )),
       ];

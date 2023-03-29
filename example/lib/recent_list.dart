@@ -7,8 +7,7 @@ import 'media_item.dart';
 const List<MediaUrl> samples = [
   MediaUrl(
       title: "Aliyun", url: "http://player.alicdn.com/video/aliyunmedia.mp4"),
-  MediaUrl(
-      title: "http 404", url: "https://fijkplayer.befovy.com/butterfly.flv"),
+  MediaUrl(title: "http 404", url: "https://fplayer.dev/butterfly.flv"),
   MediaUrl(title: "assets file", url: "asset:///assets/butterfly.mp4"),
   MediaUrl(title: "assets file", url: "asset:///assets/birthday.mp4"),
   MediaUrl(title: "assets file 404", url: "asset:///assets/beebee.mp4"),
@@ -76,21 +75,26 @@ const List<MediaUrl> samples = [
 ];
 
 class SamplesScreen extends StatelessWidget {
+  const SamplesScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FAppBar.defaultSetting(title: "Online Samples"),
+      appBar: const FAppBar.defaultSetting(title: "Online Samples"),
       body: ListView.builder(
-          itemCount: samples.length,
-          itemBuilder: (BuildContext context, int index) {
-            MediaUrl mediaUrl = samples[index];
-            return MediaItem(mediaUrl: mediaUrl);
-          }),
+        itemCount: samples.length,
+        itemBuilder: (BuildContext context, int index) {
+          MediaUrl mediaUrl = samples[index];
+          return MediaItem(mediaUrl: mediaUrl);
+        },
+      ),
     );
   }
 }
 
 class RecentMediaList extends StatefulWidget {
+  const RecentMediaList({super.key});
+
   @override
   _RecentMediaListState createState() => _RecentMediaListState();
 }
@@ -99,7 +103,7 @@ class _RecentMediaListState extends State<RecentMediaList> {
   int recentCount = 0;
   int newestId = 0;
   late StreamingSharedPreferences prefs;
-  ScrollController _controller = ScrollController();
+  final ScrollController _controller = ScrollController();
 
   _RecentMediaListState() {
     asyncSetup();
@@ -129,10 +133,10 @@ class _RecentMediaListState extends State<RecentMediaList> {
         itemCount: recentCount > 20 ? 20 : recentCount,
         itemBuilder: (BuildContext context, int index) {
           index = ((newestId + 20) - index) % 20;
-          final key = "recentid" + index.toString();
+          final key = "recentid$index";
           MediaUrl item = prefs
               .getCustomValue<MediaUrl>(key,
-                  defaultValue: MediaUrl(url: ""),
+                  defaultValue: const MediaUrl(url: ""),
                   adapter: JsonAdapter(
                     deserializer: (value) =>
                         MediaUrl.fromJson(value as Map<String, dynamic>),
@@ -150,12 +154,14 @@ Future<void> addToHistory(MediaUrl mediaUrl) async {
 
   if (count > 0) {
     MediaUrl theNewest = prefs
-        .getCustomValue<MediaUrl>("recentid" + newest.toString(),
-            defaultValue: MediaUrl(url: ""),
-            adapter: JsonAdapter(
-              deserializer: (value) =>
-                  MediaUrl.fromJson(value as Map<String, dynamic>),
-            ))
+        .getCustomValue<MediaUrl>(
+          "recentid$newest",
+          defaultValue: const MediaUrl(url: ""),
+          adapter: JsonAdapter(
+            deserializer: (value) =>
+                MediaUrl.fromJson(value as Map<String, dynamic>),
+          ),
+        )
         .getValue();
 
     if (theNewest.url != mediaUrl.url) {
@@ -172,10 +178,12 @@ Future<void> addToHistory(MediaUrl mediaUrl) async {
     await prefs.setInt("recent_count", count);
     await prefs.setInt("recent_newest", newest);
     await prefs.setCustomValue<MediaUrl>(
-        "recentid" + newest.toString(), mediaUrl,
-        adapter: JsonAdapter(
-          deserializer: (value) =>
-              MediaUrl.fromJson(value as Map<String, dynamic>),
-        ));
+      "recentid$newest",
+      mediaUrl,
+      adapter: JsonAdapter(
+        deserializer: (value) =>
+            MediaUrl.fromJson(value as Map<String, dynamic>),
+      ),
+    );
   }
 }

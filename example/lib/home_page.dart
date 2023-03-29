@@ -50,8 +50,12 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             HomeItem(
               onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => SamplesScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SamplesScreen(),
+                  ),
+                );
               },
               text: "Online Samples",
             ),

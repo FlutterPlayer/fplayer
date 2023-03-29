@@ -26,7 +26,7 @@ class FOption {
     options[3] = Map.from(_swsOption);
     options[4] = Map.from(_playerOption);
     options[5] = Map.from(_swrOption);
-    FLog.i("FijkOption cloned");
+    FLog.i("FOption cloned");
     return options;
   }
 
@@ -44,9 +44,9 @@ class FOption {
   void setHostOption(String key, dynamic value) {
     if (value is String || value is int) {
       _hostOption[key] = value;
-      FLog.v("FijkOption.setHostOption key:$key, value :$value");
+      FLog.v("FOption.setHostOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setHostOption with invalid value:$value");
+      FLog.e("FOption.setHostOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }
@@ -56,9 +56,9 @@ class FOption {
   void setPlayerOption(String key, dynamic value) {
     if (value is String || value is int) {
       _playerOption[key] = value;
-      FLog.v("FijkOption.setPlayerOption key:$key, value :$value");
+      FLog.v("FOption.setPlayerOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setPlayerOption with invalid value:$value");
+      FLog.e("FOption.setPlayerOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }
@@ -68,9 +68,9 @@ class FOption {
   void setFormatOption(String key, dynamic value) {
     if (value is String || value is int) {
       _formatOption[key] = value;
-      FLog.v("FijkOption.setFormatOption key:$key, value :$value");
+      FLog.v("FOption.setFormatOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setFormatOption with invalid value:$value");
+      FLog.e("FOption.setFormatOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }
@@ -80,9 +80,9 @@ class FOption {
   void setCodecOption(String key, dynamic value) {
     if (value is String || value is int) {
       _codecOption[key] = value;
-      FLog.v("FijkOption.setCodecOption key:$key, value :$value");
+      FLog.v("FOption.setCodecOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setCodecOption with invalid value:$value");
+      FLog.e("FOption.setCodecOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }
@@ -92,9 +92,9 @@ class FOption {
   void setSwsOption(String key, dynamic value) {
     if (value is String || value is int) {
       _swsOption[key] = value;
-      FLog.v("FijkOption.setSwsOption key:$key, value :$value");
+      FLog.v("FOption.setSwsOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setSwsOption with invalid value:$value");
+      FLog.e("FOption.setSwsOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }
@@ -104,9 +104,9 @@ class FOption {
   void setSwrOption(String key, dynamic value) {
     if (value is String || value is int) {
       _swrOption[key] = value;
-      FLog.v("FijkOption.setSwrOption key:$key, value :$value");
+      FLog.v("FOption.setSwrOption key:$key, value :$value");
     } else {
-      FLog.e("FijkOption.setSwrOption with invalid value:$value");
+      FLog.e("FOption.setSwrOption with invalid value:$value");
       throw ArgumentError.value(value, "value", "Must be int or String");
     }
   }

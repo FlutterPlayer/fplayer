@@ -22,16 +22,16 @@
 
 part of fplayer;
 
-/// Default builder generate default FijkVolToast UI
+/// Default builder generate default FVolToast UI
 Widget defaultFVolumeToast(double value, Stream<double> emitter) {
-  return _FijkSliderToast(value, 0, emitter);
+  return _FSliderToast(value, 0, emitter);
 }
 
 Widget defaultFBrightnessToast(double value, Stream<double> emitter) {
-  return _FijkSliderToast(value, 1, emitter);
+  return _FSliderToast(value, 1, emitter);
 }
 
-class _FijkSliderToast extends StatefulWidget {
+class _FSliderToast extends StatefulWidget {
   final Stream<double> emitter;
   final double initial;
 
@@ -39,13 +39,13 @@ class _FijkSliderToast extends StatefulWidget {
   // type 1 screen brightness
   final int type;
 
-  _FijkSliderToast(this.initial, this.type, this.emitter);
+  _FSliderToast(this.initial, this.type, this.emitter);
 
   @override
-  _FijkSliderToastState createState() => _FijkSliderToastState();
+  _FSliderToastState createState() => _FSliderToastState();
 }
 
-class _FijkSliderToastState extends State<_FijkSliderToast> {
+class _FSliderToastState extends State<_FSliderToast> {
   double value = 0;
   StreamSubscription? subs;
 
@@ -80,9 +80,9 @@ class _FijkSliderToastState extends State<_FijkSliderToast> {
 
     final primaryColor = Theme.of(context).primaryColor;
     return Align(
-      alignment: Alignment(0, -0.4),
+      alignment: const Alignment(0, -0.4),
       child: Card(
-        color: Color(0x33000000),
+        color: const Color(0x33000000),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
           child: Row(
@@ -95,7 +95,7 @@ class _FijkSliderToastState extends State<_FijkSliderToast> {
               Container(
                 width: 100,
                 height: 1.5,
-                margin: EdgeInsets.only(left: 8),
+                margin: const EdgeInsets.only(left: 8),
                 child: LinearProgressIndicator(
                   value: value,
                   backgroundColor: Colors.black,
