@@ -115,7 +115,7 @@ packages:
     source: sdk
     version: "0.0.0"
   fplayer:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       path: ".."
       relative: true
