@@ -5,13 +5,13 @@ FPanelWidgetBuilder fPanelBuilder({
   final bool fill = false,
 
   /// 是否展示视频列表
-  final bool videos = false,
+  final bool isVideos = false,
 
   /// 视频列表
-  final List<VideoItem>? videoMap,
+  final List<VideoItem>? videoList,
   final int videoIndex = 0,
 
-  /// 下一集点击事件
+  /// 全屏点击下一集按钮事件
   final void Function()? playNextVideoFun,
 
   /// 视频标题
@@ -23,22 +23,22 @@ FPanelWidgetBuilder fPanelBuilder({
   final bool doubleTap = true,
 
   /// 中间区域右上方按钮是否展示
-  final bool rightButton = false,
+  final bool isRightButton = false,
 
   /// 中间区域右上方按钮Widget集合
   final List<Widget>? rightButtonList,
 
   /// 截屏按钮是否展示
-  final bool snapShot = false,
+  final bool isSnapShot = false,
 
   /// 字幕按钮是否展示
-  final bool caption = false,
+  final bool isCaption = false,
 
   /// 倍速列表,注意这里一定要包含1倍速
   final Map<String, double>? speedList,
 
   /// 清晰度按钮是否展示
-  final bool resolution = false,
+  final bool isResolution = false,
 
   /// 清晰度列表
   final Map<String, ResolutionItem>? resolutionList,
@@ -64,23 +64,23 @@ FPanelWidgetBuilder fPanelBuilder({
       key: key,
       player: player,
       data: data,
-      videos: videos,
+      isVideos: isVideos,
       title: title,
       subTitle: subTitle,
-      videoMap: videoMap,
+      videoList: videoList,
       videoIndex: videoIndex,
       playNextVideoFun: playNextVideoFun,
-      rightButton: rightButton,
+      isRightButton: isRightButton,
       rightButtonList: rightButtonList,
       viewSize: viewSize,
       texPos: texturePos,
       fill: fill,
       doubleTap: doubleTap,
-      snapShot: snapShot,
+      isSnapShot: isSnapShot,
       hideDuration: duration,
-      caption: caption,
+      isCaption: isCaption,
       speedList: speedList,
-      resolution: resolution,
+      isResolution: isResolution,
       resolutionList: resolutionList,
       settingFun: settingFun,
       onError: onError,
@@ -114,23 +114,23 @@ class ResolutionItem {
 class _FPanel2 extends StatefulWidget {
   final FPlayer player;
   final FData data;
-  final bool videos;
+  final bool isVideos;
   final String title;
   final String subTitle;
-  final List<VideoItem>? videoMap;
+  final List<VideoItem>? videoList;
   final int videoIndex;
   final void Function()? playNextVideoFun;
-  final bool rightButton;
+  final bool isRightButton;
   final List<Widget>? rightButtonList;
   final Size viewSize;
   final Rect texPos;
   final bool fill;
   final bool doubleTap;
-  final bool snapShot;
+  final bool isSnapShot;
   final int hideDuration;
-  final bool caption;
+  final bool isCaption;
   final Map<String, double>? speedList;
-  final bool resolution;
+  final bool isResolution;
   final Map<String, ResolutionItem>? resolutionList;
   final void Function()? settingFun;
   final void Function()? onError;
@@ -146,16 +146,16 @@ class _FPanel2 extends StatefulWidget {
     required this.viewSize,
     this.hideDuration = 5000,
     this.doubleTap = false,
-    this.snapShot = false,
+    this.isSnapShot = false,
     required this.texPos,
-    this.videos = false,
+    this.isVideos = false,
     this.title = '',
     this.subTitle = '',
-    this.videoMap,
+    this.videoList,
     this.rightButtonList,
-    this.rightButton = false,
-    this.caption = false,
-    this.resolution = false,
+    this.isRightButton = false,
+    this.isCaption = false,
+    this.isResolution = false,
     this.settingFun,
     this.videoIndex = 0,
     this.playNextVideoFun,
@@ -254,8 +254,7 @@ class __FPanel2State extends State<_FPanel2> {
   late StreamController<double> _valController;
 
   // snapshot
-  ImageProvider? _imageProvider;
-  Timer? _snapshotTimer;
+  bool screenshot = false;
 
   // Is it needed to clear seek data in FData (widget.data)
   bool _needClearSeekData = true;
@@ -384,7 +383,6 @@ class __FPanel2State extends State<_FPanel2> {
     super.dispose();
     _valController.close();
     _hideTimer?.cancel();
-    _snapshotTimer?.cancel();
     _currentPosSubs?.cancel();
     _bufferPosSubs?.cancel();
     _bufferPercunt.cancel();
@@ -445,7 +443,7 @@ class __FPanel2State extends State<_FPanel2> {
     /// 播放完成是否播放下一集
     bool isPlayCompleted = valueState == FState.completed;
     if (isPlayCompleted) {
-      if (widget.videos && widget.videoMap!.length - 1 > widget.videoIndex) {
+      if (widget.isVideos && widget.videoList!.length - 1 > widget.videoIndex) {
         widget.onVideoEnd?.call();
       } else {
         _isPlayCompleted = isPlayCompleted;
@@ -495,7 +493,7 @@ class __FPanel2State extends State<_FPanel2> {
     await player.reset();
     try {
       await player.setDataSource(
-        widget.videoMap![widget.videoIndex + 1].url,
+        widget.videoList![widget.videoIndex + 1].url,
         autoPlay: true,
         showCover: true,
       );
@@ -659,7 +657,7 @@ class __FPanel2State extends State<_FPanel2> {
   Widget buildOptTextButton(BuildContext context, double height) {
     return Row(
       children: [
-        if (widget.caption)
+        if (widget.isCaption)
           TextButton(
             onPressed: () {
               setState(() {
@@ -698,7 +696,7 @@ class __FPanel2State extends State<_FPanel2> {
             ),
           ),
         ),
-        if (widget.resolution)
+        if (widget.isResolution)
           TextButton(
             onPressed: () {
               if (hideCaption == false) {
@@ -1018,8 +1016,8 @@ class __FPanel2State extends State<_FPanel2> {
               child: Row(
                 children: <Widget>[
                   buildPlayButton(context, height),
-                  if (widget.videos &&
-                      widget.videoMap!.length - 1 > widget.videoIndex)
+                  if (widget.isVideos &&
+                      widget.videoList!.length - 1 > widget.videoIndex)
                     buildPlayNextButton(context, height),
                   const Spacer(),
                   buildOptTextButton(context, height),
@@ -1060,13 +1058,37 @@ class __FPanel2State extends State<_FPanel2> {
       var provider = MemoryImage(v);
       precacheImage(provider, context).then((_) {
         setState(() {
-          _imageProvider = provider;
+          screenshot = true;
+          Timer.periodic(const Duration(seconds: 2), (timer) {
+            screenshot = false;
+          });
         });
       });
       FLog.d("get snapshot succeed");
     }).catchError((e) {
       FLog.d("get snapshot failed");
     });
+  }
+
+  Widget screenshotMsg() {
+    return Offstage(
+      offstage: !screenshot,
+      child: Container(
+        margin: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color.fromRGBO(0, 0, 0, .2),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: const Text(
+          "截图成功",
+          style: TextStyle(
+            color: Color.fromRGBO(255, 255, 255, .8),
+            fontSize: 15,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget buildPanel(BuildContext context) {
@@ -1087,18 +1109,18 @@ class __FPanel2State extends State<_FPanel2> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Visibility(
-              visible: widget.rightButton,
+              visible: widget.isRightButton,
               child: Column(
                 children: widget.rightButtonList ?? [],
               ),
             ),
             Visibility(
-              visible: widget.rightButton,
+              visible: widget.isRightButton,
               child: const SizedBox(
                 height: 20,
               ),
             ),
-            if (widget.snapShot)
+            if (widget.isSnapShot)
               InkWell(
                 onTap: () {
                   takeSnapshot();
@@ -1226,7 +1248,7 @@ class __FPanel2State extends State<_FPanel2> {
                   ),
                 ),
               ),
-              // 倍数选择
+              // 清晰度选择
               Positioned(
                 right: 50,
                 bottom: 0,
@@ -1392,6 +1414,10 @@ class __FPanel2State extends State<_FPanel2> {
           ),
           Align(
             alignment: Alignment.center,
+            child: screenshotMsg(),
+          ),
+          Align(
+            alignment: Alignment.center,
             child: buildDragProgressTime(),
           ),
         ],
@@ -1446,7 +1472,9 @@ class __FPanel2State extends State<_FPanel2> {
 
   Widget buildTitle() {
     return Text(
-      widget.videos ? widget.videoMap![widget.videoIndex].title : widget.title,
+      widget.isVideos
+          ? widget.videoList![widget.videoIndex].title
+          : widget.title,
       style: const TextStyle(
         fontSize: 22,
         color: Color(0xFF787878),
@@ -1458,8 +1486,8 @@ class __FPanel2State extends State<_FPanel2> {
     return Container(
       padding: const EdgeInsets.only(left: 55),
       child: Text(
-        widget.videos
-            ? widget.videoMap![widget.videoIndex].subTitle
+        widget.isVideos
+            ? widget.videoList![widget.videoIndex].subTitle
             : widget.subTitle,
         style: const TextStyle(
           fontSize: 14,
@@ -1663,25 +1691,6 @@ class __FPanel2State extends State<_FPanel2> {
           ),
         ),
       );
-    } else if (_imageProvider != null) {
-      _snapshotTimer?.cancel();
-      _snapshotTimer = Timer(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() {
-            _imageProvider = null;
-          });
-        }
-      });
-      return Center(
-        child: IgnorePointer(
-          child: Container(
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.yellowAccent, width: 3)),
-            child:
-                Image(height: 200, fit: BoxFit.contain, image: _imageProvider!),
-          ),
-        ),
-      );
     } else {
       return Container();
     }
@@ -1698,8 +1707,6 @@ class __FPanel2State extends State<_FPanel2> {
     } else if (player.state == FState.error) {
       ws.add(buildStateless());
     } else if (!player.value.videoRenderStart) {
-      ws.add(buildStateless());
-    } else if (_imageProvider != null) {
       ws.add(buildStateless());
     } else {
       var volume = _volume;

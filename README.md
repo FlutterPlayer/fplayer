@@ -139,11 +139,12 @@ class VideoScreenState extends State<VideoScreen> {
     await player.setOption(FOption.playerCategory, "mediacodec", 1);
     await player.setOption(FOption.playerCategory, "packet-buffering", 0);
     await player.setOption(FOption.playerCategory, "soundtouch", 1);
-    await player.setDataSource(widget.url, autoPlay: true).catchError((e) {
-      if (kDebugMode) {
-        print("setDataSource error: $e");
-      }
-    });
+
+    // 播放传入的视频
+    setVideoUrl(widget.url);
+
+    // 播放视频列表的第一个视频
+    // setVideoUrl(videoList[videoIndex].url);
   }
 
   Future<void> setVideoUrl(String url) async {
@@ -176,9 +177,9 @@ class VideoScreenState extends State<VideoScreen> {
               title: '视频标题',
               subTitle: '视频副标题',
               // 右下方截屏按钮
-              snapShot: true,
+              isSnapShot: true,
               // 右上方按钮组开关
-              rightButton: true,
+              isRightButton: true,
               // 右上方按钮组
               rightButtonList: [
                 InkWell(
@@ -217,12 +218,12 @@ class VideoScreenState extends State<VideoScreen> {
               // 字幕功能：待内核提供api
               // caption: true,
               // 视频列表开关
-              videos: true,
+              isVideos: true,
               // 视频列表列表
-              videoMap: videoList,
+              videoList: videoList,
               // 当前视频索引
               videoIndex: videoIndex,
-              // 播放下一集视频回调
+              // 全屏模式下点击播放下一集视频按钮
               playNextVideoFun: () {
                 setState(() {
                   videoIndex += 1;
@@ -234,18 +235,16 @@ class VideoScreenState extends State<VideoScreen> {
               // 自定义倍速列表
               speedList: speedList,
               // 清晰度开关
-              resolution: true,
+              isResolution: true,
               // 自定义清晰度列表
               resolutionList: resolutionList,
               // 视频播放错误点击刷新回调
               onError: () async {
                 await player.reset();
-                print('重新播放');
                 setVideoUrl(videoList[videoIndex].url);
               },
-              // 视频播放错误点击刷新回调
+              // 视频播放完成回调
               onVideoEnd: () async {
-                // 视频结束最后一集的时候会有个UI层显示出来可以触发重新开始
                 var index = videoIndex + 1;
                 if (index < videoList.length) {
                   await player.reset();
@@ -256,7 +255,7 @@ class VideoScreenState extends State<VideoScreen> {
                 }
               },
               onVideoTimeChange: () {
-                // 视频时间变动则触发一次，可以保存视频历史如不想频繁触发则在里修改 sendCount % 50 == 0
+                // 视频时间变动则触发一次，可以保存视频播放历史
               },
               onVideoPrepared: () async {
                 // 视频初始化完毕，如有历史记录时间段则可以触发快进
@@ -342,7 +341,6 @@ class VideoScreenState extends State<VideoScreen> {
     player.release();
   }
 }
-
 ```
 
 ## 鸣谢以下项目
