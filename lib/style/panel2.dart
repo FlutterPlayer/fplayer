@@ -1120,7 +1120,9 @@ class __FPanel2State extends State<_FPanel2> {
                 height: 20,
               ),
             ),
-            if (widget.isSnapShot)
+            if (widget.isSnapShot &&
+                (player.value.videoRenderStart &&
+                    player.value.audioRenderStart))
               InkWell(
                 onTap: () {
                   takeSnapshot();
@@ -1674,7 +1676,8 @@ class __FPanel2State extends State<_FPanel2> {
           ],
         ),
       );
-    } else if (!player.value.videoRenderStart) {
+    } else if (!player.value.audioRenderStart &&
+        !player.value.videoRenderStart) {
       return Center(
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -1706,7 +1709,8 @@ class __FPanel2State extends State<_FPanel2> {
       ws.add(buildStateless());
     } else if (player.state == FState.error) {
       ws.add(buildStateless());
-    } else if (!player.value.videoRenderStart) {
+    } else if (!player.value.audioRenderStart &&
+        !player.value.videoRenderStart) {
       ws.add(buildStateless());
     } else {
       var volume = _volume;
