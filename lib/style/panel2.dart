@@ -1104,7 +1104,7 @@ class __FPanel2State extends State<_FPanel2> {
 
     if (fullScreen) {
       rightWidget = Padding(
-        padding: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 8),
+        padding: const EdgeInsets.only(left: 10, right: 25, top: 8, bottom: 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -1145,7 +1145,7 @@ class __FPanel2State extends State<_FPanel2> {
         ),
       );
       leftWidget = Padding(
-        padding: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 8),
+        padding: const EdgeInsets.only(left: 25, right: 10, top: 8, bottom: 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
