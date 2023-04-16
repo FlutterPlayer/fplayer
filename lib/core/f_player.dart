@@ -243,6 +243,8 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// pass "asset:///assets/butterfly.mp4" to [path]
   /// scheme is `asset`, `://` is scheme's separator， `/` is path's separator.
   ///
+  /// [headers] http header
+  ///
   /// If set [autoPlay] true, player will stat to play.
   /// The behavior of [setDataSource(url, autoPlay: true)] is like
   ///    await setDataSource(url);
@@ -258,6 +260,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// If both [autoPlay] and [showCover] are true, [showCover] will be ignored.
   Future<void> setDataSource(
     String path, {
+    Map<String, String?>? headers,
     bool autoPlay = false,
     bool showCover = false,
   }) async {
@@ -279,6 +282,16 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
             .invokeMethod("setDataSource", <String, dynamic>{'url': path});
       } on PlatformException catch (e) {
         return _errorListener(e);
+      }
+      if (headers != null) {
+        String headersStr = '';
+        headers.forEach((key, value) {
+          if (headersStr.isNotEmpty) {
+            headersStr = '\r\n$headersStr';
+          }
+          headersStr = '$key: ${value ?? ''}$headersStr';
+        });
+        setOption(FOption.formatCategory, 'headers', headersStr);
       }
       if (autoPlay == true) {
         await start();
