@@ -195,7 +195,7 @@ class FValue {
           hashCode == other.hashCode;
 
   @override
-  int get hashCode => hashValues(
+  int get hashCode => Object.hash(
         prepared,
         completed,
         state,
@@ -318,7 +318,7 @@ class FException implements Exception {
           hashCode == other.hashCode;
 
   @override
-  int get hashCode => hashValues(code, message);
+  int get hashCode => Object.hash(code, message);
 
   @override
   String toString() {
