@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fplayer/fplayer.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
@@ -124,168 +125,170 @@ class VideoScreenState extends State<VideoScreen> {
     double videoHeight = size.width * 9 / 16;
     return Scaffold(
       appBar: const FAppBar.defaultSetting(title: "Video"),
-      body: Column(
-        children: [
-          FView(
-            player: player,
-            width: double.infinity,
-            height: videoHeight,
-            color: Colors.black,
-            fsFit: FFit.contain, // 全屏模式下的填充
-            fit: FFit.fill, // 正常模式下的填充
-            panelBuilder: fPanelBuilder(
-              // 单视频配置
-              title: '视频标题',
-              subTitle: '视频副标题',
-              // 右下方截屏按钮
-              isSnapShot: true,
-              // 右上方按钮组开关
-              isRightButton: true,
-              // 右上方按钮组
-              rightButtonList: [
-                InkWell(
-                  onTap: () {},
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColorLight,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(5),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            FView(
+              player: player,
+              width: double.infinity,
+              height: videoHeight,
+              color: Colors.black,
+              fsFit: FFit.contain, // 全屏模式下的填充
+              fit: FFit.fill, // 正常模式下的填充
+              panelBuilder: fPanelBuilder(
+                // 单视频配置
+                title: '视频标题',
+                subTitle: '视频副标题',
+                // 右下方截屏按钮
+                isSnapShot: true,
+                // 右上方按钮组开关
+                isRightButton: true,
+                // 右上方按钮组
+                rightButtonList: [
+                  InkWell(
+                    onTap: () {},
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColorLight,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(5),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.favorite,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
-                    child: Icon(
-                      Icons.favorite,
-                      color: Theme.of(context).primaryColor,
-                    ),
                   ),
-                ),
-                InkWell(
-                  onTap: () {},
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColorLight,
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(5),
+                  InkWell(
+                    onTap: () {},
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColorLight,
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(5),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.thumb_up,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
-                    child: Icon(
-                      Icons.thumb_up,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                )
-              ],
-              // 字幕功能：待内核提供api
-              // caption: true,
-              // 视频列表开关
-              isVideos: true,
-              // 视频列表列表
-              videoList: videoList,
-              // 当前视频索引
-              videoIndex: videoIndex,
-              // 全屏模式下点击播放下一集视频按钮
-              playNextVideoFun: () {
-                setState(() {
-                  videoIndex += 1;
-                });
-              },
-              settingFun: () {
-                print('设置按钮点击事件');
-              },
-              // 自定义倍速列表
-              speedList: speedList,
-              // 清晰度开关
-              isResolution: true,
-              // 自定义清晰度列表
-              resolutionList: resolutionList,
-              // 视频播放错误点击刷新回调
-              onError: () async {
-                await player.reset();
-                setVideoUrl(videoList[videoIndex].url);
-              },
-              // 视频播放完成回调
-              onVideoEnd: () async {
-                var index = videoIndex + 1;
-                if (index < videoList.length) {
-                  await player.reset();
+                  )
+                ],
+                // 字幕功能：待内核提供api
+                // caption: true,
+                // 视频列表开关
+                isVideos: true,
+                // 视频列表列表
+                videoList: videoList,
+                // 当前视频索引
+                videoIndex: videoIndex,
+                // 全屏模式下点击播放下一集视频按钮
+                playNextVideoFun: () {
                   setState(() {
-                    videoIndex = index;
+                    videoIndex += 1;
                   });
-                  setVideoUrl(videoList[index].url);
-                }
-              },
-              onVideoTimeChange: () {
-                // 视频时间变动则触发一次，可以保存视频播放历史
-              },
-              onVideoPrepared: () async {
-                // 视频初始化完毕，如有历史记录时间段则可以触发快进
-                try {
-                  if (seekTime >= 1) {
-                    /// seekTo必须在FState.prepared
-                    print('seekTo');
-                    await player.seekTo(seekTime);
-                    // print("视频快进-$seekTime");
-                    seekTime = 0;
-                  }
-                } catch (error) {
-                  print("视频初始化完快进-异常: $error");
-                }
-              },
-            ),
-          ),
-          // 自定义小屏列表
-          Container(
-            width: double.infinity,
-            height: 30,
-            margin: const EdgeInsets.all(20),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
-              itemCount: videoList.length,
-              itemBuilder: (context, index) {
-                bool isCurrent = videoIndex == index;
-                Color textColor = Theme.of(context).primaryColor;
-                Color bgColor = Theme.of(context).primaryColorDark;
-                Color borderColor = Theme.of(context).primaryColor;
-                if (isCurrent) {
-                  textColor = Theme.of(context).primaryColorDark;
-                  bgColor = Theme.of(context).primaryColor;
-                  borderColor = Theme.of(context).primaryColor;
-                }
-                return GestureDetector(
-                  onTap: () async {
+                },
+                settingFun: () {
+                  print('设置按钮点击事件');
+                },
+                // 自定义倍速列表
+                speedList: speedList,
+                // 清晰度开关
+                isResolution: true,
+                // 自定义清晰度列表
+                resolutionList: resolutionList,
+                // 视频播放错误点击刷新回调
+                onError: () async {
+                  await player.reset();
+                  setVideoUrl(videoList[videoIndex].url);
+                },
+                // 视频播放完成回调
+                onVideoEnd: () async {
+                  var index = videoIndex + 1;
+                  if (index < videoList.length) {
                     await player.reset();
                     setState(() {
                       videoIndex = index;
                     });
                     setVideoUrl(videoList[index].url);
-                  },
-                  child: Container(
-                    margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(5),
-                      color: bgColor,
-                      border: Border.all(
-                        width: 1.5,
-                        color: borderColor,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      videoList[index].title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
-                );
-              },
+                  }
+                },
+                onVideoTimeChange: () {
+                  // 视频时间变动则触发一次，可以保存视频播放历史
+                },
+                onVideoPrepared: () async {
+                  // 视频初始化完毕，如有历史记录时间段则可以触发快进
+                  try {
+                    if (seekTime >= 1) {
+                      /// seekTo必须在FState.prepared
+                      print('seekTo');
+                      await player.seekTo(seekTime);
+                      // print("视频快进-$seekTime");
+                      seekTime = 0;
+                    }
+                  } catch (error) {
+                    print("视频初始化完快进-异常: $error");
+                  }
+                },
+              ),
             ),
-          ),
-        ],
+            // 自定义小屏列表
+            Container(
+              width: double.infinity,
+              height: 30,
+              margin: const EdgeInsets.all(20),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: videoList.length,
+                itemBuilder: (context, index) {
+                  bool isCurrent = videoIndex == index;
+                  Color textColor = Theme.of(context).primaryColor;
+                  Color bgColor = Theme.of(context).primaryColorDark;
+                  Color borderColor = Theme.of(context).primaryColor;
+                  if (isCurrent) {
+                    textColor = Theme.of(context).primaryColorDark;
+                    bgColor = Theme.of(context).primaryColor;
+                    borderColor = Theme.of(context).primaryColor;
+                  }
+                  return GestureDetector(
+                    onTap: () async {
+                      await player.reset();
+                      setState(() {
+                        videoIndex = index;
+                      });
+                      setVideoUrl(videoList[index].url);
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        color: bgColor,
+                        border: Border.all(
+                          width: 1.5,
+                          color: borderColor,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        videoList[index].title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

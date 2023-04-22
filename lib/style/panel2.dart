@@ -523,30 +523,34 @@ class __FPanel2State extends State<_FPanel2> {
   }
 
   void onVerticalDragStartFun(DragStartDetails d) {
-    if (d.localPosition.dx > panelWidth() / 2) {
-      // right, volume
-      _dragLeft = false;
-      FVolume.getVol().then((v) {
-        if (!widget.data.contains(FData._fViewPanelVolume)) {
-          widget.data.setValue(FData._fViewPanelVolume, v);
-        }
-        setState(() {
-          _volume = v;
-          _valController.add(v);
+    // 唤起菜单栏防止误触
+    if (d.localPosition.dy > 40 &&
+        d.localPosition.dy < widget.viewSize.height - 40) {
+      if (d.localPosition.dx > panelWidth() / 2) {
+        // right, volume
+        _dragLeft = false;
+        FVolume.getVol().then((v) {
+          if (!widget.data.contains(FData._fViewPanelVolume)) {
+            widget.data.setValue(FData._fViewPanelVolume, v);
+          }
+          setState(() {
+            _volume = v;
+            // _valController.add(v);
+          });
         });
-      });
-    } else {
-      // left, brightness
-      _dragLeft = true;
-      FPlugin.screenBrightness().then((v) {
-        if (!widget.data.contains(FData._fViewPanelBrightness)) {
-          widget.data.setValue(FData._fViewPanelBrightness, v);
-        }
-        setState(() {
-          _brightness = v;
-          _valController.add(v);
+      } else {
+        // left, brightness
+        _dragLeft = true;
+        FPlugin.screenBrightness().then((v) {
+          if (!widget.data.contains(FData._fViewPanelBrightness)) {
+            widget.data.setValue(FData._fViewPanelBrightness, v);
+          }
+          setState(() {
+            _brightness = v;
+            _valController.add(v);
+          });
         });
-      });
+      }
     }
   }
 
