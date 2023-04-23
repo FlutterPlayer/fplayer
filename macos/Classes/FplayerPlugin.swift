@@ -35,5 +35,4 @@ public class FplayerPlugin: NSObject, FlutterPlugin {
     default:
       result(FlutterMethodNotImplemented)
     }
-  }
 }
