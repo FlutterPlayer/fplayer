@@ -4,6 +4,8 @@ PODS:
   - FlutterMacOS (1.0.0)
   - fplayer (0.0.1):
     - FlutterMacOS
+  - screen_brightness_macos (0.1.0):
+    - FlutterMacOS
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -12,6 +14,7 @@ DEPENDENCIES:
   - battery_plus (from `Flutter/ephemeral/.symlinks/plugins/battery_plus/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - fplayer (from `Flutter/ephemeral/.symlinks/plugins/fplayer/macos`)
+  - screen_brightness_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_brightness_macos/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/macos`)
 
 EXTERNAL SOURCES:
@@ -21,6 +24,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   fplayer:
     :path: Flutter/ephemeral/.symlinks/plugins/fplayer/macos
+  screen_brightness_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_brightness_macos/macos
   shared_preferences_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/macos
 
@@ -28,8 +33,9 @@ SPEC CHECKSUMS:
   battery_plus: 906cd081df7f2274f5235581515b59a628dcaec7
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   fplayer: 6d41b1e17a94e5a417629d95875def963cbbe546
+  screen_brightness_macos: 2d6d3af2165592d9a55ffcd95b7550970e41ebda
   shared_preferences_foundation: 986fc17f3d3251412d18b0265f9c64113a8c2472
 
 PODFILE CHECKSUM: 353c8bcc5d5b0994e508d035b5431cfe18c1dea7
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.12.0
