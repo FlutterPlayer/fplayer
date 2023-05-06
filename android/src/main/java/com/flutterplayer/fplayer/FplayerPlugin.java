@@ -86,7 +86,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     private int playableCnt = 0;
     // Count of playing players
     private int playingCnt = 0;
-    private int volumeUIMode = NEVER_SHOW_UI;
+    private int volumeUIMode = ALWAYS_SHOW_UI;
     private float volStep = 1.0f / 16.0f;
     private boolean eventListening = false;
     // non-local field prevent GC

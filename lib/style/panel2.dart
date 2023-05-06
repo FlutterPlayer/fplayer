@@ -529,6 +529,7 @@ class __FPanel2State extends State<_FPanel2> {
       if (d.localPosition.dx > panelWidth() / 2) {
         // right, volume
         _dragLeft = false;
+        FVolume.setUIMode(FVolume.neverShowUI);
         FVolume.getVol().then((v) {
           if (!widget.data.contains(FData._fViewPanelVolume)) {
             widget.data.setValue(FData._fViewPanelVolume, v);
@@ -583,6 +584,7 @@ class __FPanel2State extends State<_FPanel2> {
   }
 
   void onVerticalDragEndFun(DragEndDetails e) {
+    FVolume.setUIMode(FVolume.alwaysShowUI);
     _volume = null;
     _brightness = null;
   }
