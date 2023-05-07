@@ -21,6 +21,7 @@ public class FplayerPlugin: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
+<<<<<<< HEAD
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "fplayer", binaryMessenger: registrar.messenger)
@@ -35,4 +36,6 @@ public class FplayerPlugin: NSObject, FlutterPlugin {
     default:
       result(FlutterMethodNotImplemented)
     }
+=======
+>>>>>>> 2064795c96f7dd1e374bf32665a988fb54fef66d
 }

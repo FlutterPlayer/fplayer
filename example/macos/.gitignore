@@ -5,4 +5,8 @@
 # Xcode-related
 **/dgph
 **/xcuserdata/
+<<<<<<< HEAD
 *.lock
+=======
+*.lock
+>>>>>>> 2064795c96f7dd1e374bf32665a988fb54fef66d
