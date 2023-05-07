@@ -39,7 +39,7 @@ class _FSliderToast extends StatefulWidget {
   // type 1 screen brightness
   final int type;
 
-  _FSliderToast(this.initial, this.type, this.emitter);
+  const _FSliderToast(this.initial, this.type, this.emitter);
 
   @override
   _FSliderToastState createState() => _FSliderToastState();

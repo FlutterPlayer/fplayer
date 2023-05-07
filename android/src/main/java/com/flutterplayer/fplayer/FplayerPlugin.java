@@ -57,7 +57,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * FijkPlugin
+ * FPlugin
  */
 public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, ActivityAware, FEngine, FVolume.VolumeKeyListener, AudioManager.OnAudioFocusChangeListener {
 
@@ -73,7 +73,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     // always show system volume changed UI
     private static final int ALWAYS_SHOW_UI = 3;
 
-    final private SparseArray<FPlayer> fijkPlayers = new SparseArray<>();
+    final private SparseArray<FPlayer> fPlayers = new SparseArray<>();
 
     private final QueuingEventSink mEventSink = new QueuingEventSink();
 
@@ -279,9 +279,9 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 result.success(null);
                 break;
             case "createPlayer": {
-                FPlayer fijkPlayer = new FPlayer(this, false);
-                int playerId = fijkPlayer.getPlayerId();
-                fijkPlayers.append(playerId, fijkPlayer);
+                FPlayer fPlayer = new FPlayer(this, false);
+                int playerId = fPlayer.getPlayerId();
+                fPlayers.append(playerId, fPlayer);
                 result.success(playerId);
                 break;
             }
@@ -290,10 +290,10 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 final Integer arg = call.argument("pid");
                 if (arg != null)
                     pid = arg;
-                FPlayer fijkPlayer = fijkPlayers.get(pid);
-                if (fijkPlayer != null) {
-                    fijkPlayer.release();
-                    fijkPlayers.delete(pid);
+                FPlayer fPlayer = fPlayers.get(pid);
+                if (fPlayer != null) {
+                    fPlayer.release();
+                    fPlayers.delete(pid);
                 }
                 result.success(null);
                 break;
@@ -461,7 +461,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 mAudioFocusRequest = null;
                 break;
         }
-        Log.i("FIJKPLAYER", "onAudioFocusChange: " + focusChange);
+        Log.i("FPLAYER", "onAudioFocusChange: " + focusChange);
     }
 
     /**
@@ -503,13 +503,13 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
         float brightness = activity.getWindow().getAttributes().screenBrightness;
         if (brightness < 0) {
             Context context = context();
-            Log.w("FIJKPLAYER", "window attribute brightness less than 0");
+            Log.w("FPLAYER", "window attribute brightness less than 0");
             try {
                 if (context != null) {
                     brightness = Settings.System.getInt(context.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS) / (float) 255;
                 }
             } catch (Settings.SettingNotFoundException e) {
-                Log.e("FIJKPLAYER", "System brightness settings not found");
+                Log.e("FPLAYER", "System brightness settings not found");
                 brightness = 1.0f;
             }
         }
@@ -576,7 +576,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
      */
     @Override
     public void audioFocus(boolean request) {
-        Log.i("FIJKPLAYER", "audioFocus " + (request ? "request" : "release") + " state:" + mAudioFocusRequested);
+        Log.i("FPLAYER", "audioFocus " + (request ? "request" : "release") + " state:" + mAudioFocusRequested);
         if (request && !mAudioFocusRequested) {
             requestAudioFocus();
         } else if (mAudioFocusRequested) {
@@ -590,7 +590,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
         if (context != null) {
             return (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         } else {
-            Log.e("FIJKPLAYER", "context null, can't get AudioManager");
+            Log.e("FPLAYER", "context null, can't get AudioManager");
             return null;
         }
     }
