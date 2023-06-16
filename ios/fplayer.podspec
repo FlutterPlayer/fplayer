@@ -26,7 +26,7 @@ A new Flutter plugin project.
 
   s.libraries = "bz2", "z", "stdc++"
 
-  s.dependency 'fplayer-core', '1.1.1'
+  s.dependency 'fplayer-core', '1.0.1'
 
   s.ios.deployment_target = '11.0'
 
