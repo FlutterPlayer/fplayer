@@ -1510,7 +1510,7 @@ class __FPanel2State extends State<_FPanel2> {
     return Container(
       padding: const EdgeInsets.only(right: 10),
       child: Text(
-        '${DateTime.now().hour}:${DateTime.now().minute}',
+        DateFormat("HH:mm").format(DateTime.now()),
         style: TextStyle(
           color: Theme.of(context).primaryColor,
           fontSize: 12,

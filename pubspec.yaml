@@ -21,6 +21,9 @@ dependencies:
   # 设备亮度
   screen_brightness: ^0.2.2
 
+  # 格式化工具
+  intl: ^0.18.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
