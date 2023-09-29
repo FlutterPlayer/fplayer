@@ -21,7 +21,7 @@ A new Flutter plugin project.
   s.static_framework = true
 
   # s.preserve_paths = 'Frameworks/*.framework'
-  # s.vendored_framework = 'Framework/IJKMediaPlayer.framework'
+  # s.vendored_frameworks = 'Frameworks/IJKMediaPlayer.framework'
   # s.xcconfig = { 'LD_RUNPATH_SEARCH_PATHS' => '"$(PODS_ROOT)/Frameworks/"' }
 
   s.libraries = "bz2", "z", "stdc++"
