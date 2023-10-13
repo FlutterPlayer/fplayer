@@ -267,7 +267,7 @@ class __FPanel2State extends State<_FPanel2> {
   StreamSubscription? batteryStateListener;
   BatteryState? batteryState;
   int batteryLevel = 0;
-  late Timer timer;
+  late Timer batteryTimer;
 
   static const FSliderColors sliderColors = FSliderColors(
     cursorColor: Color(0xFF07B9B9),
@@ -303,7 +303,7 @@ class __FPanel2State extends State<_FPanel2> {
 
     getBatteryLevel();
 
-    Timer.periodic(const Duration(seconds: 5), (timer) {
+    batteryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       getBatteryLevel();
     });
 
@@ -381,6 +381,7 @@ class __FPanel2State extends State<_FPanel2> {
   @override
   void dispose() {
     super.dispose();
+    batteryTimer.cancel();
     _valController.close();
     _hideTimer?.cancel();
     _currentPosSubs?.cancel();
@@ -1067,6 +1068,7 @@ class __FPanel2State extends State<_FPanel2> {
           screenshot = true;
           Timer.periodic(const Duration(seconds: 2), (timer) {
             screenshot = false;
+            timer.cancel();
           });
         });
       });
