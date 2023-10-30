@@ -4,8 +4,8 @@ PODS:
   - Flutter (1.0.0)
   - fplayer (0.0.1):
     - Flutter
-    - fplayer-core (= 1.0.2)
-  - fplayer-core (1.0.2)
+    - fplayer-core (= 1.0.4)
+  - fplayer-core (1.0.4)
   - screen_brightness_ios (0.1.0):
     - Flutter
   - shared_preferences_foundation (0.0.1):
