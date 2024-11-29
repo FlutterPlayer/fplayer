@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "fplayer",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}
