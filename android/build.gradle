@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.2'
+        classpath 'com.android.tools.build:gradle:8.3.1'
     }
 }
 
@@ -22,7 +22,9 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 33
+    compileSdk 34
+    namespace 'com.flutterplayer.fplayer'
+
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -30,7 +32,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
+        minSdk 19
     }
 }
 
