@@ -22,7 +22,6 @@
 
 package com.flutterplayer.fplayer;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -39,6 +38,7 @@ import android.view.KeyEvent;
 import android.view.WindowManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -48,7 +48,6 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.view.TextureRegistry;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
@@ -79,7 +78,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
 
     private WeakReference<Activity> mActivity;
     private WeakReference<Context> mContext;
-    private Registrar mRegistrar;
+//    private Registrar mRegistrar;
     private FlutterPluginBinding mBinding;
 
     // Count of playable players
@@ -98,17 +97,17 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     /**
      * Plugin registration.
      */
-    @SuppressWarnings("unused")
-    public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "befovy.com/fijk");
-        FplayerPlugin plugin = new FplayerPlugin();
-        plugin.initWithRegistrar(registrar);
-        channel.setMethodCallHandler(plugin);
-
-        final FPlayer player = new FPlayer(plugin, true);
-        player.setupSurface();
-        player.release();
-    }
+//    @SuppressWarnings("unused")
+//    public static void registerWith(Registrar registrar) {
+//        final MethodChannel channel = new MethodChannel(registrar.messenger(), "befovy.com/fijk");
+//        FplayerPlugin plugin = new FplayerPlugin();
+//        plugin.initWithRegistrar(registrar);
+//        channel.setMethodCallHandler(plugin);
+//
+//        final FPlayer player = new FPlayer(plugin, true);
+//        player.setupSurface();
+//        player.release();
+//    }
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
@@ -165,8 +164,6 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     public TextureRegistry.SurfaceTextureEntry createSurfaceEntry() {
         if (mBinding != null) {
             return mBinding.getTextureRegistry().createSurfaceTexture();
-        } else if (mRegistrar != null) {
-            return mRegistrar.textures().createSurfaceTexture();
         }
         return null;
     }
@@ -176,8 +173,6 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     public BinaryMessenger messenger() {
         if (mBinding != null) {
             return mBinding.getBinaryMessenger();
-        } else if (mRegistrar != null) {
-            return mRegistrar.messenger();
         }
         return null;
     }
@@ -193,9 +188,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
 
     @Nullable
     private Activity activity() {
-        if (mRegistrar != null) {
-            return mRegistrar.activity();
-        } else if (mActivity != null) {
+        if (mActivity != null) {
             return mActivity.get();
         } else {
             return null;
@@ -213,21 +206,8 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 //noinspection ConstantConditions
                 path = mBinding.getFlutterAssets().getAssetFilePathByName(asset, packageName);
             }
-        } else if (mRegistrar != null) {
-            if (TextUtils.isEmpty(packageName)) {
-                path = mRegistrar.lookupKeyForAsset(asset);
-            } else {
-                path = mRegistrar.lookupKeyForAsset(asset, packageName);
-            }
         }
         return path;
-    }
-
-
-    private void initWithRegistrar(@NonNull Registrar registrar) {
-        mRegistrar = registrar;
-        mContext = new WeakReference<>(registrar.activeContext());
-        init(registrar.messenger());
     }
 
     private void initWithBinding(@NonNull FlutterPluginBinding binding) {
@@ -317,11 +297,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 if (activity != null) {
                     int current_orientation = activity.getResources().getConfiguration().orientation;
                     if (current_orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-                        }
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                         changedPort = true;
                     }
                 }
@@ -333,11 +309,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
                 if (activity != null) {
                     int current_orientation = activity.getResources().getConfiguration().orientation;
                     if (current_orientation == Configuration.ORIENTATION_PORTRAIT) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                        }
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
                         changedLand = true;
                     }
                 }
@@ -346,11 +318,7 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
             case "setOrientationAuto":
                 activity = activity();
                 if (activity != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
-                    } else {
-                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
-                    }
+                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
                 }
                 result.success(null);
                 break;
@@ -500,7 +468,8 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
         Activity activity = activity();
         if (activity == null || activity.getWindow() == null)
             return 0;
-        float brightness = activity.getWindow().getAttributes().screenBrightness;
+        float brightness;
+        brightness = activity.getWindow().getAttributes().screenBrightness;
         if (brightness < 0) {
             Context context = context();
             Log.w("FPLAYER", "window attribute brightness less than 0");
@@ -525,47 +494,37 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
         activity.getWindow().setAttributes(layoutParams);
     }
 
-    @TargetApi(26)
-    @SuppressWarnings("deprecation")
+    @androidx.annotation.RequiresApi(26)
     private void requestAudioFocus() {
         AudioManager audioManager = audioManager();
         if (audioManager == null)
             return;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            AudioAttributes audioAttributes =
-                    new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-                            .build();
+        AudioAttributes audioAttributes =
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .build();
 
-            AudioFocusRequest audioFocusRequest =
-                    new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(audioAttributes)
-                            .setAcceptsDelayedFocusGain(true)
-                            .setOnAudioFocusChangeListener(this) // Need to implement listener
-                            .build();
-            mAudioFocusRequest = audioFocusRequest;
-            audioManager.requestAudioFocus(audioFocusRequest);
-        } else {
-            audioManager.requestAudioFocus(this,
-                    AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-        }
+        AudioFocusRequest audioFocusRequest =
+                new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(audioAttributes)
+                        .setAcceptsDelayedFocusGain(true)
+                        .setOnAudioFocusChangeListener(this) // Need to implement listener
+                        .build();
+        mAudioFocusRequest = audioFocusRequest;
+        audioManager.requestAudioFocus(audioFocusRequest);
         mAudioFocusRequested = true;
     }
 
-    @TargetApi(26)
+    @androidx.annotation.RequiresApi(26)
     // @SuppressWarnings("deprecation")
     private void abandonAudioFocus() {
         AudioManager audioManager = audioManager();
         if (audioManager == null)
             return;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            if (mAudioFocusRequest != null) {
-                audioManager.abandonAudioFocusRequest((AudioFocusRequest) mAudioFocusRequest);
-                mAudioFocusRequest = null;
-            }
-        } else {
-            audioManager.abandonAudioFocus(this);
+        if (mAudioFocusRequest != null) {
+            audioManager.abandonAudioFocusRequest((AudioFocusRequest) mAudioFocusRequest);
+            mAudioFocusRequest = null;
         }
         mAudioFocusRequested = false;
     }
@@ -578,9 +537,13 @@ public class FplayerPlugin implements MethodCallHandler, FlutterPlugin, Activity
     public void audioFocus(boolean request) {
         Log.i("FPLAYER", "audioFocus " + (request ? "request" : "release") + " state:" + mAudioFocusRequested);
         if (request && !mAudioFocusRequested) {
-            requestAudioFocus();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requestAudioFocus();
+            }
         } else if (mAudioFocusRequested) {
-            abandonAudioFocus();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                abandonAudioFocus();
+            }
         }
     }
 
