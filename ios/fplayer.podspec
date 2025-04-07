@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'fplayer'
-  s.version          = '0.0.1'
+  s.version          = '1.1.3'
   s.summary          = 'A new Flutter plugin project.'
   s.description      = <<-DESC
 A new Flutter plugin project.
