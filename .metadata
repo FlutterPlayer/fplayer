@@ -4,7 +4,7 @@
 # This file should be version controlled.
 
 version:
-  revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
+  revision: 9944297138845a94256f1cf37beb88ff9a8e811a
   channel: stable
 
 project_type: plugin
@@ -13,14 +13,17 @@ project_type: plugin
 migration:
   platforms:
     - platform: root
-      create_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
-      base_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
+      create_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
+      base_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
     - platform: android
-      create_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
-      base_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
+      create_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
+      base_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
     - platform: ios
-      create_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
-      base_revision: 4f9d92fbbdf072a70a70d2179a9f87392b94104c
+      create_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
+      base_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
+    - platform: macos
+      create_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
+      base_revision: 9944297138845a94256f1cf37beb88ff9a8e811a
 
   # User provided section
 

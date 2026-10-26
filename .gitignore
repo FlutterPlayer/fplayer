@@ -24,7 +24,39 @@ migrate_working_dir/
 # Flutter/Dart/Pub related
 # Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
 /pubspec.lock
+
+# Flutter OHOS engine artifact copied from the local Flutter SDK
+ohos/har/flutter.har
+
+# Kernels fetched from the ijkplayer release
+/android/libs/*.aar
+/android/local-repo/
+/android/fplayercore.version
+/android/src/main/jniLibs/
+/ios/fplayer/Frameworks/
+/macos/fplayer/Frameworks/
+/ohos/har/fplayercore-ohos.har
+/windows/third_party/
 **/doc/api/
 .dart_tool/
 .packages
 build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+/Package.resolved
+ios/fplayer/Package.resolved
+macos/fplayer/Package.resolved
+
+
+# AI tool related (local only)
+.codegraph/
+.omo/
+.claude/
+.cursor/
+.cursorignore
+.windsurf/
+.cline/
+.aider*
+.continue/

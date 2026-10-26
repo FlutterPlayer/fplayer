@@ -24,24 +24,18 @@
 package com.flutterplayer.fplayer;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.view.TextureRegistry;
 
 interface FEngine {
 
-    @Nullable
     TextureRegistry.SurfaceTextureEntry createSurfaceEntry();
 
-    @Nullable
     BinaryMessenger messenger();
 
-    @Nullable
     Context context();
 
-    @Nullable
-    String lookupKeyForAsset(@NonNull String asset, @Nullable String packageName);
+    String lookupKeyForAsset(String asset, String packageName);
 
     void onPlayingChange(int delta);
 

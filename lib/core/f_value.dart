@@ -192,7 +192,16 @@ class FValue {
       identical(this, other) ||
       other is FValue &&
           runtimeType == other.runtimeType &&
-          hashCode == other.hashCode;
+          prepared == other.prepared &&
+          completed == other.completed &&
+          audioRenderStart == other.audioRenderStart &&
+          videoRenderStart == other.videoRenderStart &&
+          state == other.state &&
+          size == other.size &&
+          rotate == other.rotate &&
+          duration == other.duration &&
+          fullScreen == other.fullScreen &&
+          exception == other.exception;
 
   @override
   int get hashCode => Object.hash(
@@ -315,7 +324,8 @@ class FException implements Exception {
       identical(this, other) ||
       other is FException &&
           runtimeType == other.runtimeType &&
-          hashCode == other.hashCode;
+          code == other.code &&
+          message == other.message;
 
   @override
   int get hashCode => Object.hash(code, message);
@@ -327,9 +337,9 @@ class FException implements Exception {
 }
 
 class FData {
-  static const String _fViewPanelVolume = "__fview_panel_init_volume";
-  static const String _fViewPanelBrightness = "__fview_panel_init_brightness";
-  static const String _fViewPanelSeekto = "__fview_panel_sekto_position";
+  static const String panelVolumeKey = "__fview_panel_init_volume";
+  static const String panelBrightnessKey = "__fview_panel_init_brightness";
+  static const String panelSeekToKey = "__fview_panel_sekto_position";
 
   final Map<String, dynamic> _data = HashMap();
 

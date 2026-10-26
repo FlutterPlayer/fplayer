@@ -1,0 +1,20 @@
+name: fplayer_ui
+description: Optional UI panels and overlays for the fplayer Flutter plugin.
+version: 1.3.0
+homepage: https://github.com/FlutterPlayer/fplayer
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fplayer:
+    path: ../..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

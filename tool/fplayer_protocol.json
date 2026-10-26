@@ -1,0 +1,79 @@
+{
+  "channels": {
+    "plugin": "fplayer.dev/fplayer",
+    "pluginEvent": "fplayer.dev/fplayer/event",
+    "platform": "fplayer.dev/fplayer/platform",
+    "playerPrefix": "fplayer.dev/fplayer/",
+    "playerEventPrefix": "fplayer.dev/fplayer/event/"
+  },
+  "methods": {
+    "plugin": {
+      "getPlatformVersion": "getPlatformVersion",
+      "init": "init",
+      "createPlayer": "createPlayer",
+      "releasePlayer": "releasePlayer",
+      "logLevel": "logLevel",
+      "setOrientationPortrait": "setOrientationPortrait",
+      "setOrientationLandscape": "setOrientationLandscape",
+      "setOrientationAuto": "setOrientationAuto",
+      "setScreenOn": "setScreenOn",
+      "isScreenKeptOn": "isScreenKeptOn",
+      "brightness": "brightness",
+      "setBrightness": "setBrightness",
+      "volumeUp": "volumeUp",
+      "volumeDown": "volumeDown",
+      "volumeMute": "volumeMute",
+      "volumeSet": "volumeSet",
+      "systemVolume": "systemVolume",
+      "volUiMode": "volUiMode",
+      "onLoad": "onLoad",
+      "onUnload": "onUnload",
+      "requestAudioFocus": "requestAudioFocus",
+      "releaseAudioFocus": "releaseAudioFocus",
+      "getBatteryInfo": "getBatteryInfo"
+    },
+    "player": {
+      "setupSurface": "setupSurface",
+      "setOption": "setOption",
+      "applyOptions": "applyOptions",
+      "setDataSource": "setDataSource",
+      "prepareAsync": "prepareAsync",
+      "start": "start",
+      "pause": "pause",
+      "stop": "stop",
+      "reset": "reset",
+      "getCurrentPosition": "getCurrentPosition",
+      "setVolume": "setVolume",
+      "seekTo": "seekTo",
+      "setLoop": "setLoop",
+      "setSpeed": "setSpeed",
+      "snapshot": "snapshot",
+      "onSnapshot": "_onSnapshot"
+    }
+  },
+  "events": {
+    "prepared": "prepared",
+    "stateChange": "state_change",
+    "renderingStart": "rendering_start",
+    "freeze": "freeze",
+    "buffering": "buffering",
+    "pos": "pos",
+    "rotate": "rotate",
+    "sizeChanged": "size_changed",
+    "seekComplete": "seek_complete",
+    "error": "error",
+    "volume": "volume"
+  },
+  "states": [
+    "idle",
+    "initialized",
+    "asyncPreparing",
+    "prepared",
+    "started",
+    "paused",
+    "completed",
+    "stopped",
+    "error",
+    "end"
+  ]
+}

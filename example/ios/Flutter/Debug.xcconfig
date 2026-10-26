@@ -1,2 +1,5 @@
-#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = i386 x86_64
+SWIFT_VERSION = 5.0
+LIBRARY_SEARCH_PATHS = $(inherited) "$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)"
+OTHER_LDFLAGS = $(inherited) -lswiftCompatibility56 -lswiftCompatibilityConcurrency

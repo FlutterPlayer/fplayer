@@ -16,9 +16,9 @@ class FVolumeEvent {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FVolumeEvent &&
-          vol != 0.0 &&
-          vol != 1.0 &&
-          hashCode == other.hashCode);
+          vol == other.vol &&
+          sui == other.sui &&
+          type == other.type);
 
   @override
   int get hashCode => Object.hash(vol, sui, type);
@@ -57,11 +57,13 @@ class FVolume {
       _VolumeValueNotifier(const FVolumeEvent(vol: 0, sui: false, type: 0));
 
   static const double _defaultStep = 1.0 / 16.0;
+  static int _listenerCount = 0;
 
   /// Mute system volume.
   /// return system volume after mute
   static Future<double> mute() async {
-    var vol = await FPlugin._channel.invokeMethod("volumeMute");
+    if (!FPlugin.supportsSystemVolume) return Future.value(0);
+    var vol = await FPlugin._channel.invokeMethod(FProtocol.methodVolumeMute);
     if (vol != null) return Future.value(vol);
     return Future.value(0);
   }
@@ -73,18 +75,21 @@ class FVolume {
     if (vol < 0.0 || vol > 1.0) {
       return Future.error(ArgumentError.value(
           vol, "step must be not null and in range [0.0, 1.0]"));
+    } else if (!FPlugin.supportsSystemVolume) {
+      return Future.value(vol);
     } else {
       var afterSet = await FPlugin._channel
-          .invokeMethod("volumeSet", <String, dynamic>{'vol': vol});
+          .invokeMethod(FProtocol.methodVolumeSet, <String, dynamic>{'vol': vol});
       if (afterSet != null) return Future.value(afterSet);
-      return Future.value(0);
+      return Future.value(vol);
     }
   }
 
   /// get ths current system volume.
   /// the range of returned value is [0.0, 1.0].
   static Future<double> getVol() async {
-    var vol = await FPlugin._channel.invokeMethod("systemVolume");
+    if (!FPlugin.supportsSystemVolume) return Future.value(0);
+    var vol = await FPlugin._channel.invokeMethod(FProtocol.methodSystemVolume);
     if (vol != null) return Future.value(vol);
     return Future.value(0);
   }
@@ -96,9 +101,11 @@ class FVolume {
     if (step < 0.0 || step > 1.0) {
       return Future.error(ArgumentError.value(
           step, "step must be not null and in range [0.0, 1.0]"));
+    } else if (!FPlugin.supportsSystemVolume) {
+      return Future.value(0);
     } else {
       var vol = await FPlugin._channel
-          .invokeMethod("volumeUp", <String, dynamic>{'step': step});
+          .invokeMethod(FProtocol.methodVolumeUp, <String, dynamic>{'step': step});
       if (vol != null) return Future.value(vol);
       return Future.value(0);
     }
@@ -111,9 +118,11 @@ class FVolume {
     if (step < 0.0 || step > 1.0) {
       return Future.error(ArgumentError.value(
           step, "step must be not null and in range [0.0, 1.0]"));
+    } else if (!FPlugin.supportsSystemVolume) {
+      return Future.value(0);
     } else {
       var vol = await FPlugin._channel
-          .invokeMethod("volumeDown", <String, dynamic>{'step': step});
+          .invokeMethod(FProtocol.methodVolumeDown, <String, dynamic>{'step': step});
       if (vol != null) return Future.value(vol);
       return Future.value(0);
     }
@@ -123,11 +132,13 @@ class FVolume {
   /// mode can be one of
   /// {[hideUIWhenPlayable], [hideUIWhenPlaying], [neverShowUI], [alwaysShowUI]}
   static Future<void> setUIMode(int mode) {
-    if (mode < hideUIWhenPlayable || hideUIWhenPlayable > alwaysShowUI) {
-      return Future.error(ArgumentError.notNull("mode"));
+    if (mode < hideUIWhenPlayable || mode > alwaysShowUI) {
+      return Future.error(ArgumentError.value(mode, "mode"));
+    } else if (!FPlugin.supportsSystemVolume) {
+      return Future.value();
     } else {
       return FPlugin._channel
-          .invokeMethod("volUiMode", <String, dynamic>{'mode': mode});
+          .invokeMethod(FProtocol.methodVolUiMode, <String, dynamic>{'mode': mode});
     }
   }
 
@@ -138,100 +149,25 @@ class FVolume {
   /// the [listener] wiil be nitified after system volume changed.
   /// the value after change can be obtained through [FVolume.value]
   static void addListener(VoidCallback listener) {
-    FPlugin._onLoad("vol");
+    if (!FPlugin.supportsSystemVolume) return;
+    if (_listenerCount == 0) {
+      FPlugin._onLoad("vol");
+    }
+    _listenerCount++;
     _notifier.addListener(listener);
   }
 
   /// remove the [listener] set using [addListener]
   static void removeListener(VoidCallback listener) {
     _notifier.removeListener(listener);
+    if (!FPlugin.supportsSystemVolume || _listenerCount == 0) return;
+    _listenerCount--;
+    if (_listenerCount == 0) {
+      FPlugin._onUnload();
+    }
   }
 
   /// get the system volume event.
   /// a valid value is returned only if [addListener] is called and there's really volume changing
   static FVolumeEvent get value => _notifier.value;
-}
-
-/// Volume changed callback func.
-///
-/// See [FVolumeEvent]
-/// [value] is the value of volume, and has been mapped into range [0.0, 1.0]
-/// true value of [ui] indicates that Android/iOS system volume changed UI is shown for this volume change event
-/// [streamType] shows track\stream type for this volume change, this value is always [FVolume.STREAM_MUSIC] in this version
-typedef FVolumeCallback = void Function(FVolumeEvent value);
-
-/// stateful widget that watching system volume, no ui widget
-/// when system volume changed, [watcher] will be invoked.
-class FVolumeWatcher extends StatefulWidget {
-  /// volume changed callback
-  final FVolumeCallback watcher;
-
-  /// child widget, must be non-null
-  final Widget child;
-
-  /// whether show default volume changed toast, default value is false.
-  ///
-  /// The default toast ui insert an OverlayEntry to current context's overlay
-  final bool showToast;
-
-  const FVolumeWatcher({
-    super.key,
-    required this.watcher,
-    /*required*/ required this.child,
-    this.showToast = false,
-  });
-
-  @override
-  _FVolumeWatcherState createState() => _FVolumeWatcherState();
-}
-
-class _FVolumeWatcherState extends State<FVolumeWatcher> {
-  static OverlayEntry? _entry;
-  static Timer? _timer;
-  late StreamController<double> _volController;
-
-  @override
-  void initState() {
-    super.initState();
-    _volController = StreamController.broadcast();
-    FVolume.addListener(volChanged);
-    FVolume.setUIMode(FVolume.hideUIWhenPlayable);
-  }
-
-  void volChanged() {
-    FVolumeEvent value = FVolume.value;
-    _volController.add(value.vol);
-    widget.watcher(value);
-    if (widget.showToast && !value.sui) {
-      showVolToast(value.vol);
-    }
-  }
-
-  /// reference https://www.kikt.top/posts/flutter/toast/oktoast/
-  void showVolToast(double vol) {
-    bool active = _timer?.isActive ?? false;
-    _timer?.cancel();
-    Widget widget = defaultFVolumeToast(vol, _volController.stream);
-    if (active == false) {
-      var entry = OverlayEntry(builder: (_) => widget);
-      _entry = entry;
-      var overlay = Overlay.of(context);
-      if (overlay != null) overlay.insert(entry);
-    }
-    _timer = Timer(const Duration(milliseconds: 800), () {
-      _entry?.remove();
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    FVolume.removeListener(volChanged);
-    _volController.close();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
 }

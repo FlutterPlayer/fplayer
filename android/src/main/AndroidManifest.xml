@@ -1,2 +1,3 @@
-<manifest package="com.flutterplayer.fplayer">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.flutterplayer.fplayer">
 </manifest>

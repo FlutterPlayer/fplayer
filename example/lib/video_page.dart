@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fplayer/fplayer.dart';
-import 'package:screen_brightness/screen_brightness.dart';
+import 'package:fplayer_ui/fplayer_ui.dart';
 
 import 'app_bar.dart';
 
@@ -294,14 +294,8 @@ class VideoScreenState extends State<VideoScreen> {
   }
 
   @override
-  void dispose() async {
-    super.dispose();
-    try {
-      await ScreenBrightness().resetScreenBrightness();
-    } catch (e) {
-      print(e);
-      throw 'Failed to reset brightness';
-    }
+  void dispose() {
     player.release();
+    super.dispose();
   }
 }

@@ -6,7 +6,7 @@ description: Demonstrates how to use the fplayer plugin.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: '>=2.18.0 <3.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -18,8 +18,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  streaming_shared_preferences: ^2.0.0
-
   fplayer:
     # When depending on this package from a real application you should use:
     #   fplayer: ^x.y.z
@@ -28,12 +26,13 @@ dependencies:
     # the parent directory to use the current plugin's version.
     path: ../
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
+  fplayer_ui:
+    path: ../packages/fplayer_ui
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to

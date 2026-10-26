@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ijkplayer_version:
+        description: ijkplayer release tag to fetch; empty uses the latest release
+        required: false
+        type: string
+      build_ohos:
+        description: Build the OpenHarmony package on a [self-hosted, ohos] runner
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+  IJKPLAYER_VERSION: ${{ github.event.inputs.ijkplayer_version || '' }}
+
+jobs:
+  dart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: bash tool/ci.sh
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Fetch ijkplayer packages
+        env:
+          IJKPLAYER_SKIP_WINDOWS: '1'
+        run: bash tool/fetch_ijkplayer_packages.sh
+      - name: Build Android example
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter build apk --debug
+
+  apple:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Fetch ijkplayer packages
+        env:
+          IJKPLAYER_SKIP_WINDOWS: '1'
+        run: bash tool/fetch_ijkplayer_packages.sh
+      - name: Build iOS simulator example
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter build ios --simulator --debug --no-codesign
+      - name: Build macOS example
+        working-directory: example
+        run: flutter build macos --debug
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+      - name: Fetch ijkplayer packages
+        shell: bash
+        run: bash tool/fetch_ijkplayer_packages.sh
+      - name: Build Windows example
+        working-directory: example
+        shell: bash
+        env:
+          IJKPLAYER_ROOT: ${{ github.workspace }}\windows\third_party\fplayercore
+        run: |
+          flutter pub get
+          flutter build windows --debug
+
+  ohos:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_ohos == 'true'
+    runs-on: [self-hosted, ohos]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ijkplayer packages
+        run: bash tool/fetch_ijkplayer_packages.sh
+      - name: Copy Flutter OHOS engine HAR
+        shell: bash
+        run: |
+          FLUTTER_BIN="$(command -v flutter)"
+          FLUTTER_ROOT="$(cd "$(dirname "$FLUTTER_BIN")/.." && pwd)"
+          cp "$FLUTTER_ROOT/bin/cache/artifacts/engine/ohos-arm64-release/flutter.har" ohos/har/flutter.har
+      - name: Build OHOS example
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter build hap --debug

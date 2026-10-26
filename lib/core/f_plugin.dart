@@ -1,13 +1,20 @@
 part of fplayer;
 
+class FBatteryInfo {
+  const FBatteryInfo(this.level, this.charging);
+
+  final int level;
+  final bool charging;
+}
+
 class FPlugin {
   /// Make constructor private
   const FPlugin._();
 
-  static const MethodChannel _channel = MethodChannel('befovy.com/fijk');
+  static const MethodChannel _channel = MethodChannel(FProtocol.pluginChannel);
 
   static Future<int> _createPlayer() async {
-    int? pid = await _channel.invokeMethod("createPlayer");
+    int? pid = await _channel.invokeMethod(FProtocol.methodCreatePlayer);
     if (pid != null) {
       return Future.value(pid);
     }
@@ -17,7 +24,7 @@ class FPlugin {
 
   static Future<void> _releasePlayer(int pid) {
     return _channel
-        .invokeMethod("releasePlayer", <String, dynamic>{'pid': pid});
+        .invokeMethod(FProtocol.methodReleasePlayer, <String, dynamic>{'pid': pid});
   }
 
   static bool isDesktop() {
@@ -27,11 +34,22 @@ class FPlugin {
         Platform.isFuchsia;
   }
 
+  /// Whether the native implementation exposes system volume APIs.
+  static bool get supportsSystemVolume =>
+      Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
+  /// Whether the native implementation exposes screen related APIs.
+  static bool get supportsScreenControls =>
+      Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
+  static bool get _supportsNativeLogLevel =>
+      Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
   /// Only works on Android and iOS
   static Future<bool> setOrientationPortrait() async {
     if (isDesktop()) return Future<bool>.value(true);
     // ios crash Supported orientations has no common orientation with the application
-    bool? changed = await _channel.invokeMethod("setOrientationPortrait");
+    bool? changed = await _channel.invokeMethod(FProtocol.methodSetOrientationPortrait);
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     return Future.value(changed);
@@ -44,33 +62,34 @@ class FPlugin {
   /// return false if can't change orientation.
   static Future<bool> setOrientationLandscape() async {
     if (isDesktop()) return Future.value(false);
-    bool? changed = await _channel.invokeMethod("setOrientationLandscape");
+    bool? changed = await _channel.invokeMethod(FProtocol.methodSetOrientationLandscape);
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeRight, DeviceOrientation.landscapeLeft]);
     return Future.value(changed);
   }
 
   static Future<void> setOrientationAuto() {
+    if (isDesktop()) return Future.value();
     if (Platform.isAndroid) {
       SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }
-    return _channel.invokeMethod("setOrientationAuto");
+    return _channel.invokeMethod(FProtocol.methodSetOrientationAuto);
   }
 
   /// Works on Android and iOS
   /// Keep screen on or not
   static Future<void> keepScreenOn(bool on) {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (supportsScreenControls) {
       FLog.i("keepScreenOn :$on");
-      return _channel.invokeMethod("setScreenOn", <String, dynamic>{'on': on});
+      return _channel.invokeMethod(FProtocol.methodSetScreenOn, <String, dynamic>{'on': on});
     }
     return Future.value();
   }
 
   /// Check if screen is kept on
   static Future<bool> isScreenKeptOn() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      var keptOn = await _channel.invokeMethod("isScreenKeptOn");
+    if (supportsScreenControls) {
+      var keptOn = await _channel.invokeMethod(FProtocol.methodIsScreenKeptOn);
       if (keptOn != null) {
         return Future.value(keptOn);
       }
@@ -84,9 +103,9 @@ class FPlugin {
     if (value < 0.0 || value > 1.0) {
       return Future.error(ArgumentError.value(
           value, "brightness value must be not null and in range [0.0, 1.0]"));
-    } else if (Platform.isAndroid || Platform.isIOS) {
+    } else if (supportsScreenControls) {
       return _channel.invokeMethod(
-          "setBrightness", <String, dynamic>{'brightness': value});
+          FProtocol.methodSetBrightness, <String, dynamic>{'brightness': value});
     }
     return Future.value();
   }
@@ -94,8 +113,8 @@ class FPlugin {
   /// Get the screen brightness.
   /// The range of returned value is [0.0, 1.0]
   static Future<double> screenBrightness() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      var brightness = await _channel.invokeMethod("brightness");
+    if (supportsScreenControls) {
+      var brightness = await _channel.invokeMethod(FProtocol.methodBrightness);
       if (brightness != null) return Future.value(brightness);
     }
     return Future.value(0);
@@ -105,7 +124,7 @@ class FPlugin {
   /// request audio focus for media usage
   static Future<void> requestAudioFocus() {
     if (Platform.isAndroid) {
-      return _channel.invokeMethod("requestAudioFocus");
+      return _channel.invokeMethod(FProtocol.methodRequestAudioFocus);
     }
     return Future.value();
   }
@@ -114,39 +133,58 @@ class FPlugin {
   /// release audio focus
   static Future<void> releaseAudioFocus() {
     if (Platform.isAndroid) {
-      return _channel.invokeMethod("releaseAudioFocus");
+      return _channel.invokeMethod(FProtocol.methodReleaseAudioFocus);
     }
     return Future.value();
   }
 
+  static Future<FBatteryInfo?> getBatteryInfo() async {
+    final result = await _channel
+        .invokeMapMethod<String, dynamic>(FProtocol.methodGetBatteryInfo);
+    if (result == null) return null;
+    final level = result['level'];
+    return FBatteryInfo(
+      level is int ? level : 0,
+      result['charging'] == true,
+    );
+  }
+
   static Future<void> _setLogLevel(int level) {
-    return _channel.invokeMethod("logLevel", <String, dynamic>{'level': level});
+    if (!_supportsNativeLogLevel) return Future.value();
+    return _channel.invokeMethod(FProtocol.methodLogLevel, <String, dynamic>{'level': level});
   }
 
   static StreamSubscription? _eventSubs;
+  static bool _eventListening = false;
 
   static void _onLoad(String type) {
-    if (_eventSubs == null) {
-      FLog.i("_onLoad $type");
-      _eventSubs = const EventChannel("befovy.com/fijk/event")
-          .receiveBroadcastStream()
-          .listen(FPlugin._eventListener, onError: FPlugin._errorListener);
-    }
-    _channel.invokeMethod("onLoad");
+    if (_eventListening) return;
+    _eventListening = true;
+    FLog.i("_onLoad $type");
+    _eventSubs ??= const EventChannel(FProtocol.pluginEventChannel)
+        .receiveBroadcastStream()
+        .listen(FPlugin._eventListener, onError: FPlugin._errorListener);
+    _channel.invokeMethod(FProtocol.methodOnLoad).catchError((Object error) {
+      FLog.w("_onLoad failed: $error");
+    });
   }
 
-  // ignore: unused_element
   static void _onUnload() {
+    if (!_eventListening) return;
+    _eventListening = false;
     FLog.i("_onUnload");
-    _channel.invokeMethod("onUnload");
+    _channel.invokeMethod(FProtocol.methodOnUnload).catchError((Object error) {
+      FLog.w("_onUnload failed: $error");
+    });
     _eventSubs?.cancel();
+    _eventSubs = null;
   }
 
   static void _eventListener(dynamic event) {
     final Map<dynamic, dynamic> map = event;
     FLog.d("plugin listener: $map");
     switch (map['event']) {
-      case 'volume':
+      case FProtocol.eventVolume:
         bool sui = map['sui'] ?? false;
         double vol = map['vol'] ?? 0.0;
         FVolume._instance._onVolCallback(vol, sui);

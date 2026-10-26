@@ -1,0 +1,12 @@
+{
+  "name": "fplayer",
+  "version": "1.0.0",
+  "description": "A Video Player Flutter plugin based on fplayercore, support most popular protocols and codecs.",
+  "main": "index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har",
+    "@fplayer/fplayercore": "file:./har/fplayercore-ohos.har"
+  }
+}

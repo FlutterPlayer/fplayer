@@ -92,7 +92,7 @@ class FView extends StatefulWidget {
     this.height,
     this.fit = FFit.contain,
     this.fsFit = FFit.contain,
-    this.panelBuilder = defaultFPanelBuilder,
+    this.panelBuilder = minimalFPanelBuilder,
     this.color = const Color(0xFF607D8B),
     this.cover,
     this.fs = true,
@@ -150,6 +150,7 @@ class _FViewState extends State<FView> {
   double _vWidth = -1;
   double _vHeight = -1;
   bool _fullScreen = false;
+  bool _textureSetupInFlight = false;
 
   final FData _fData = FData();
   ValueNotifier<int> paramNotifier = ValueNotifier(0);
@@ -174,20 +175,27 @@ class _FViewState extends State<FView> {
   }
 
   void _setupTexture() async {
-    final int? vid = await widget.player.setupSurface();
-    if (vid == null) {
-      FLog.e("failed to set surface");
-      return;
-    }
-    FLog.i("view setup, vid:$vid");
-    if (mounted) {
-      setState(() {
-        _textureId = vid;
-      });
+    if (_textureSetupInFlight || _textureId >= 0) return;
+    _textureSetupInFlight = true;
+    try {
+      final int? vid = await widget.player.setupSurface();
+      if (vid == null) {
+        FLog.e("failed to set surface");
+        return;
+      }
+      FLog.i("view setup, vid:$vid");
+      if (mounted) {
+        setState(() {
+          _textureId = vid;
+        });
+      }
+    } finally {
+      _textureSetupInFlight = false;
     }
   }
 
   void _fValueListener() async {
+    if (!mounted) return;
     FValue value = widget.player.value;
     if (value.prepared && _textureId < 0) {
       _setupTexture();
@@ -195,10 +203,21 @@ class _FViewState extends State<FView> {
 
     if (widget.fs) {
       if (value.fullScreen && !_fullScreen) {
-        _fullScreen = true;
-        await _pushFullScreenWidget(context);
+        if (widget.player._fullscreenRoute != null) {
+          // 全屏路由已在栈上（例如旋转触发布局重建、State 被销毁重建）。
+          // 直接接管全屏状态，不再压入第二个全屏路由，否则退出全屏需要退两次。
+          _fullScreen = true;
+        } else {
+          _fullScreen = true;
+          await _pushFullScreenWidget(context);
+          if (!mounted) return;
+        }
       } else if (_fullScreen && !value.fullScreen) {
-        Navigator.of(context).pop();
+        // 仅当全屏路由还在栈上时才弹栈，防止路由已被皮肤按钮弹出后误弹主页
+        final route = widget.player._fullscreenRoute;
+        if (route != null && mounted) {
+          Navigator.of(context).removeRoute(route);
+        }
         _fullScreen = false;
       }
 
@@ -214,22 +233,23 @@ class _FViewState extends State<FView> {
 
   @override
   void dispose() {
-    super.dispose();
     widget.player.removeListener(_fValueListener);
 
-    var brightness = _fData.getValue(FData._fViewPanelBrightness);
+    var brightness = _fData.getValue(FData.panelBrightnessKey);
     if (brightness != null && brightness is double) {
-      FPlugin.setScreenBrightness(brightness);
-      _fData.clearValue(FData._fViewPanelBrightness);
+      FPlugin.setScreenBrightness(brightness).catchError((Object _) {});
+      _fData.clearValue(FData.panelBrightnessKey);
     }
 
-    var volume = _fData.getValue(FData._fViewPanelVolume);
+    var volume = _fData.getValue(FData.panelVolumeKey);
     if (volume != null && volume is double) {
-      FVolume.setVol(volume);
-      _fData.clearValue(FData._fViewPanelVolume);
+      FVolume.setVol(volume).catchError((Object _) => 0.0);
+      _fData.clearValue(FData.panelVolumeKey);
     }
 
     widget.onDispose?.call(_fData);
+    paramNotifier.dispose();
+    super.dispose();
   }
 
   AnimatedWidget _defaultRoutePageBuilder(
@@ -263,21 +283,46 @@ class _FViewState extends State<FView> {
 
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky,
         overlays: []);
+    if (!mounted) return;
     var orientation = MediaQuery.of(context).orientation;
     FLog.d("start enter fullscreen. orientation:$orientation");
-    await FPlugin.setOrientationLandscape();
+    if (_vWidth >= _vHeight) {
+      if (orientation == Orientation.portrait) {
+        await FPlugin.setOrientationLandscape();
+      }
+    } else {
+      if (orientation == Orientation.landscape) {
+        await FPlugin.setOrientationPortrait();
+      }
+    }
+    if (!mounted) return;
 
+    widget.player._fullscreenRoute = route;
     await Navigator.of(context).push(route);
+    widget.player._fullscreenRoute = null;
     _fullScreen = false;
+    // The FView State can be disposed while the fullscreen route is up (the
+    // responsive layout rebuilds the player subtree when the screen rotates).
+    // Always reset the player and release the orientation lock, even when this
+    // State is no longer mounted, otherwise the app stays in fullscreen and
+    // locked to landscape after the route pops.
     widget.player.exitFullScreen();
+    // 先恢复到进入全屏前的方向：系统旋转锁定开启时 AUTO_ROTATION 不会转回竖屏，
+    // 直接 setOrientationAuto 会把屏幕锁死在横屏；然后再恢复自动旋转。
+    if (orientation == Orientation.portrait) {
+      await FPlugin.setOrientationPortrait();
+    } else {
+      await FPlugin.setOrientationLandscape();
+    }
+    await FPlugin.setOrientationAuto();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
         overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
-    await FPlugin.setOrientationPortrait();
+    if (!mounted) return;
   }
 
   @override
-  void didUpdateWidget(Widget oldWidget) {
-    super.didUpdateWidget(oldWidget as FView);
+  void didUpdateWidget(FView oldWidget) {
+    super.didUpdateWidget(oldWidget);
     paramNotifier.value = paramNotifier.value + 1;
   }
 
@@ -323,7 +368,7 @@ class __InnerFViewState extends State<_InnerFView> {
   int _textureId = -1;
   double _vWidth = -1;
   double _vHeight = -1;
-  final bool _vFullScreen = false;
+  bool _vFullScreen = false;
   int _degree = 0;
   bool _videoRender = false;
 
@@ -375,6 +420,9 @@ class __InnerFViewState extends State<_InnerFView> {
         fit != _fit ||
         textureId != _textureId ||
         _videoRender != videoRender) {
+      _vWidth = width;
+      _vHeight = height;
+      _vFullScreen = fullScreen;
       if (mounted) {
         setState(() {});
       }
@@ -455,8 +503,8 @@ class __InnerFViewState extends State<_InnerFView> {
   }
 
   Widget buildTexture() {
-    Widget tex = _textureId > 0 ? Texture(textureId: _textureId) : Container();
-    if (_degree != 0 && _textureId > 0) {
+    Widget tex = _textureId >= 0 ? Texture(textureId: _textureId) : Container();
+    if (_degree != 0 && _textureId >= 0) {
       return RotatedBox(
         quarterTurns: _degree ~/ 90,
         child: tex,
@@ -467,9 +515,11 @@ class __InnerFViewState extends State<_InnerFView> {
 
   @override
   void dispose() {
-    super.dispose();
     fView.player.removeListener(_fValueListener);
-    widget.fViewState.paramNotifier.removeListener(_fValueListener);
+    if (widget.fullScreen) {
+      widget.fViewState.paramNotifier.removeListener(_voidValueListener);
+    }
+    super.dispose();
   }
 
   @override

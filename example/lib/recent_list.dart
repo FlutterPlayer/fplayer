@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:streaming_shared_preferences/streaming_shared_preferences.dart';
 
 import 'app_bar.dart';
 import 'media_item.dart';
@@ -100,29 +103,28 @@ class RecentMediaList extends StatefulWidget {
 }
 
 class _RecentMediaListState extends State<RecentMediaList> {
-  int recentCount = 0;
-  int newestId = 0;
-  late StreamingSharedPreferences prefs;
+  List<MediaUrl> _items = <MediaUrl>[];
   final ScrollController _controller = ScrollController();
 
-  _RecentMediaListState() {
-    asyncSetup();
+  @override
+  void initState() {
+    super.initState();
+    RecentStore.revision.addListener(_load);
+    _load();
   }
 
-  asyncSetup() async {
-    prefs = await StreamingSharedPreferences.instance;
-
-    Preference<int> counter = prefs.getInt('recent_count', defaultValue: 0);
-    counter.listen(onHistoryChanged);
+  @override
+  void dispose() {
+    RecentStore.revision.removeListener(_load);
+    _controller.dispose();
+    super.dispose();
   }
 
-  onHistoryChanged(int v) {
-    int count = prefs.getInt("recent_count", defaultValue: 0).getValue();
-    int newest = prefs.getInt("recent_newest", defaultValue: 0).getValue();
-    _controller.jumpTo(0);
+  Future<void> _load() async {
+    final items = await RecentStore.load();
+    if (!mounted) return;
     setState(() {
-      recentCount = count;
-      newestId = newest;
+      _items = items;
     });
   }
 
@@ -130,60 +132,52 @@ class _RecentMediaListState extends State<RecentMediaList> {
   Widget build(BuildContext context) {
     return ListView.builder(
         controller: _controller,
-        itemCount: recentCount > 20 ? 20 : recentCount,
+        itemCount: _items.length,
         itemBuilder: (BuildContext context, int index) {
-          index = ((newestId + 20) - index) % 20;
-          final key = "recentid$index";
-          MediaUrl item = prefs
-              .getCustomValue<MediaUrl>(key,
-                  defaultValue: const MediaUrl(url: ""),
-                  adapter: JsonAdapter(
-                    deserializer: (value) =>
-                        MediaUrl.fromJson(value as Map<String, dynamic>),
-                  ))
-              .getValue();
-          return MediaItem(mediaUrl: item);
+          return MediaItem(mediaUrl: _items[index]);
         });
   }
 }
 
-Future<void> addToHistory(MediaUrl mediaUrl) async {
-  StreamingSharedPreferences prefs = await StreamingSharedPreferences.instance;
-  int newest = prefs.getInt("recent_newest", defaultValue: 0).getValue();
-  int count = prefs.getInt("recent_count", defaultValue: 0).getValue();
+class RecentStore {
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+  static const int maxItems = 20;
 
-  if (count > 0) {
-    MediaUrl theNewest = prefs
-        .getCustomValue<MediaUrl>(
-          "recentid$newest",
-          defaultValue: const MediaUrl(url: ""),
-          adapter: JsonAdapter(
-            deserializer: (value) =>
-                MediaUrl.fromJson(value as Map<String, dynamic>),
-          ),
-        )
-        .getValue();
+  static File get _file => File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}fplayer_recent.json');
 
-    if (theNewest.url != mediaUrl.url) {
-      newest = (newest + 1) % 20;
-      count += 1;
-    } else {
-      newest = -1;
+  static Future<List<MediaUrl>> load() async {
+    try {
+      if (!await _file.exists()) return <MediaUrl>[];
+      final text = await _file.readAsString();
+      final decoded = jsonDecode(text);
+      if (decoded is! List) return <MediaUrl>[];
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map((item) => MediaUrl.fromJson(item))
+          .toList();
+    } catch (_) {
+      return <MediaUrl>[];
     }
-  } else {
-    count += 1;
   }
 
-  if (newest >= 0) {
-    await prefs.setInt("recent_count", count);
-    await prefs.setInt("recent_newest", newest);
-    await prefs.setCustomValue<MediaUrl>(
-      "recentid$newest",
-      mediaUrl,
-      adapter: JsonAdapter(
-        deserializer: (value) =>
-            MediaUrl.fromJson(value as Map<String, dynamic>),
-      ),
-    );
+  static Future<void> add(MediaUrl mediaUrl) async {
+    final items = await load();
+    items.removeWhere((item) => item.url == mediaUrl.url);
+    items.insert(0, mediaUrl);
+    if (items.length > maxItems) {
+      items.removeRange(maxItems, items.length);
+    }
+    try {
+      await _file.writeAsString(
+        jsonEncode(items.map((item) => item.toJson()).toList()),
+        flush: true,
+      );
+    } catch (_) {
+      return;
+    }
+    revision.value++;
   }
 }
+
+Future<void> addToHistory(MediaUrl mediaUrl) => RecentStore.add(mediaUrl);

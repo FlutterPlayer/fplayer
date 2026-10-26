@@ -9,9 +9,9 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   late MethodChannel _channel;
   StreamSubscription<dynamic>? _nativeEventSubscription;
 
-  final bool _startAfterSetup = false;
-
   FValue _value;
+  bool _released = false;
+  bool _disposed = false;
 
   static Iterable<FPlayer> get all => _allInstance.values;
 
@@ -30,7 +30,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   FValue get value => _value;
 
   void _setValue(FValue newValue) {
-    if (_value == newValue) return;
+    if (_disposed || _value == newValue) return;
     _value = newValue;
     notifyListeners();
   }
@@ -75,6 +75,12 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
 
   bool _buffering = false;
   bool _seeking = false;
+  Timer? _seekTimeout;
+
+  /// 当前在 Navigator 栈上的全屏路由（由 FView 压入/弹出时维护）。
+  /// FView 的 State 可能因页面布局重建（如旋转触发响应式布局）被销毁重建，
+  /// 用播放器级引用防止重复压入第二个全屏路由（导致退出全屏需要退两次）。
+  TransitionRoute<void>? _fullscreenRoute;
 
   /// return true if the player is buffering
   bool get isBuffering => _buffering;
@@ -97,40 +103,20 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     _doNativeSetup();
   }
 
-  Future<void> _startFromAnyState() async {
-    await _nativeSetup.future;
-
-    if (state == FState.error || state == FState.stopped) {
-      await reset();
-    }
-    String? source = _dataSource;
-    if (state == FState.idle && source != null) {
-      await setDataSource(source);
-    }
-    if (state == FState.initialized) {
-      await prepareAsync();
-    }
-    if (state == FState.asyncPreparing ||
-        state == FState.prepared ||
-        state == FState.completed ||
-        state == FState.paused) {
-      await start();
-    }
-  }
-
   Future<dynamic> _handler(MethodCall call) {
     switch (call.method) {
-      case "_onSnapshot":
-        var img = call.arguments;
-        var snapShot = _snapShot;
-        if (snapShot != null) {
-          if (img is Map) {
-            snapShot.complete(img['data']);
+      case FProtocol.methodOnSnapshot:
+        final img = call.arguments;
+        final snapShot = _snapShot;
+        _snapShot = null;
+        if (snapShot != null && !snapShot.isCompleted) {
+          final data = img is Map ? img['data'] : null;
+          if (data is Uint8List) {
+            snapShot.complete(data);
           } else {
             snapShot.completeError(UnsupportedError("snapshot"));
           }
         }
-        _snapShot = null;
         break;
       default:
         break;
@@ -141,26 +127,75 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   Future<void> _doNativeSetup() async {
     _playerId = -1;
     _callId = 0;
-    _playerId = await FPlugin._createPlayer();
+    try {
+      _playerId = await FPlugin._createPlayer();
+    } catch (error, stackTrace) {
+      _setValue(value.copyWith(
+        state: FState.error,
+        exception: FException(FException.unknown, error.toString()),
+      ));
+      if (!_nativeSetup.isCompleted) {
+        _nativeSetup.completeError(error, stackTrace);
+      }
+      return;
+    }
     if (_playerId < 0) {
-      _setValue(value.copyWith(state: FState.error));
+      final error = StateError("failed to create native player");
+      _setValue(value.copyWith(
+        state: FState.error,
+        exception: FException(FException.unknown, error.message),
+      ));
+      if (!_nativeSetup.isCompleted) {
+        _nativeSetup.completeError(error);
+      }
+      return;
+    }
+    if (_disposed || _released) {
+      FPlugin._releasePlayer(_playerId).catchError((Object _) {});
+      if (!_nativeSetup.isCompleted) {
+        _nativeSetup.completeError(StateError("player disposed during setup"));
+      }
       return;
     }
     FLog.i("create player id:$_playerId");
 
     _allInstance[_playerId] = this;
-    _channel = MethodChannel('befovy.com/fijkplayer/$_playerId');
+    _channel = MethodChannel(FProtocol.playerChannel(_playerId));
     _nativeEventSubscription =
-        EventChannel('befovy.com/fijkplayer/event/$_playerId')
+        EventChannel(FProtocol.playerEventChannel(_playerId))
             .receiveBroadcastStream()
             .listen(_eventListener, onError: _errorListener);
-    _nativeSetup.complete(_playerId);
-
     _channel.setMethodCallHandler(_handler);
-    if (_startAfterSetup) {
-      FLog.i("player id:$_playerId, start after setup");
-      await _startFromAnyState();
+    _nativeSetup.complete(_playerId);
+  }
+
+  void _closeControllers() {
+    _bufferPosController.close();
+    _bufferPercentController.close();
+    _currentPosController.close();
+    _bufferStateController.close();
+  }
+
+  void _disposeLocal() {
+    if (_disposed) return;
+    _disposed = true;
+    _seekTimeout?.cancel();
+    _seekTimeout = null;
+    _nativeEventSubscription?.cancel();
+    _nativeEventSubscription = null;
+    _allInstance.remove(_playerId);
+    _closeControllers();
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    final pid = _playerId;
+    if (pid >= 0) {
+      FPlugin._releasePlayer(pid).catchError((Object _) {});
     }
+    _disposeLocal();
+    super.dispose();
   }
 
   /// Check if player is playable
@@ -181,11 +216,11 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     await _nativeSetup.future;
     if (value is String) {
       FLog.i("$this setOption k:$key, v:$value");
-      return _channel.invokeMethod("setOption",
+      return _channel.invokeMethod(FProtocol.methodSetOption,
           <String, dynamic>{"cat": category, "key": key, "str": value});
     } else if (value is int) {
       FLog.i("$this setOption k:$key, v:$value");
-      return _channel.invokeMethod("setOption",
+      return _channel.invokeMethod(FProtocol.methodSetOption,
           <String, dynamic>{"cat": category, "key": key, "long": value});
     } else {
       FLog.e("$this setOption invalid value: $value");
@@ -196,13 +231,13 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
 
   Future<void> applyOptions(FOption fOption) async {
     await _nativeSetup.future;
-    return _channel.invokeMethod("applyOptions", fOption.data);
+    return _channel.invokeMethod(FProtocol.methodApplyOptions, fOption.data);
   }
 
   Future<int?> setupSurface() async {
     await _nativeSetup.future;
     FLog.i("$this setupSurface");
-    return _channel.invokeMethod("setupSurface");
+    return _channel.invokeMethod(FProtocol.methodSetupSurface);
   }
 
   /// Take snapshot (screen shot) of current playing video
@@ -227,8 +262,19 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     }
     snapShot = Completer<Uint8List>();
     _snapShot = snapShot;
-    _channel.invokeMethod("snapshot");
-    return snapShot.future;
+    try {
+      await _channel.invokeMethod(FProtocol.methodSnapshot);
+      return await snapShot.future.timeout(const Duration(seconds: 10));
+    } catch (error) {
+      if (!snapShot.isCompleted) {
+        snapShot.completeError(error);
+      }
+      rethrow;
+    } finally {
+      if (identical(_snapShot, snapShot)) {
+        _snapShot = null;
+      }
+    }
   }
 
   /// Set data source for this player
@@ -244,7 +290,6 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   /// scheme is `asset`, `://` is scheme's separator， `/` is path's separator.
   ///
   /// [headers] http header
-  ///
   /// If set [autoPlay] true, player will stat to play.
   /// The behavior of [setDataSource(url, autoPlay: true)] is like
   ///    await setDataSource(url);
@@ -278,20 +323,16 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
       try {
         FLog.i("$this invoke setDataSource $path");
         _dataSource = path;
-        await _channel
-            .invokeMethod("setDataSource", <String, dynamic>{'url': path});
+        await _channel.invokeMethod(FProtocol.methodSetDataSource,
+            <String, dynamic>{'url': path});
       } on PlatformException catch (e) {
         return _errorListener(e);
       }
-      if (headers != null) {
-        String headersStr = '';
-        headers.forEach((key, value) {
-          if (headersStr.isNotEmpty) {
-            headersStr = '\r\n$headersStr';
-          }
-          headersStr = '$key: ${value ?? ''}$headersStr';
-        });
-        setOption(FOption.formatCategory, 'headers', headersStr);
+      if (headers != null && headers.isNotEmpty) {
+        final headersStr = headers.entries
+            .map((entry) => '${entry.key}: ${entry.value ?? ''}')
+            .join('\r\n');
+        await setOption(FOption.formatCategory, 'headers', headersStr);
       }
       if (autoPlay == true) {
         await start();
@@ -312,7 +353,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     await _nativeSetup.future;
     if (state == FState.initialized) {
       FLog.i("$this invoke prepareAsync");
-      await _channel.invokeMethod("prepareAsync");
+      await _channel.invokeMethod(FProtocol.methodPrepareAsync);
     } else {
       FLog.e("$this prepareAsync invalid state:$state");
       return Future.error(StateError("prepareAsync on invalid state $state"));
@@ -333,7 +374,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
       await _nativeSetup.future;
       FLog.i("$this invoke setVolume $volume");
       return _channel
-          .invokeMethod("setVolume", <String, dynamic>{"volume": volume});
+          .invokeMethod(FProtocol.methodSetVolume, <String, dynamic>{"volume": volume});
     }
   }
 
@@ -360,15 +401,15 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
       int cid = _callId;
       FLog.i("$this invoke prepareAsync and start #$cid");
       await setOption(FOption.playerCategory, "start-on-prepared", 1);
-      await _channel.invokeMethod("prepareAsync");
+      await _channel.invokeMethod(FProtocol.methodPrepareAsync);
       FLog.i("$this invoke prepareAsync and start #$cid -> done");
     } else if (state == FState.asyncPreparing ||
         state == FState.prepared ||
         state == FState.paused ||
         state == FState.started ||
-        value.state == FState.completed) {
+        state == FState.completed) {
       FLog.i("$this invoke start");
-      await _channel.invokeMethod("start");
+      await _channel.invokeMethod(FProtocol.methodStart);
     } else {
       FLog.e("$this invoke start invalid state:$state");
       return Future.error(StateError("call start on invalid state $state"));
@@ -379,7 +420,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     await _nativeSetup.future;
     if (isPlayable()) {
       FLog.i("$this invoke pause");
-      await _channel.invokeMethod("pause");
+      await _channel.invokeMethod(FProtocol.methodPause);
     } else {
       FLog.e("$this invoke pause invalid state:$state");
       return Future.error(StateError("call pause on invalid state $state"));
@@ -395,7 +436,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
       return Future.error(StateError("call stop on invalid state $state"));
     } else {
       FLog.i("$this invoke stop");
-      await _channel.invokeMethod("stop");
+      await _channel.invokeMethod(FProtocol.methodStop);
     }
   }
 
@@ -408,9 +449,16 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
       _callId += 1;
       int cid = _callId;
       FLog.i("$this invoke reset #$cid");
-      await _channel.invokeMethod("reset").then((_) {
+      await _channel.invokeMethod(FProtocol.methodReset).then((_) {
         FLog.i("$this invoke reset #$cid -> done");
       });
+      _seeking = false;
+      _seekTimeout?.cancel();
+      _seekTimeout = null;
+      _buffering = false;
+      _bufferPercent = 0;
+      _bufferPos = const Duration();
+      _currentPos = const Duration();
       _setValue(FValue.uninitialized().copyWith(fullScreen: value.fullScreen));
     }
   }
@@ -427,24 +475,50 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     } else {
       FLog.i("$this invoke seekTo msec:$msec");
       _seeking = true;
-      _channel.invokeMethod("seekTo", <String, dynamic>{"msec": msec});
+      _seekTimeout?.cancel();
+      _seekTimeout = Timer(const Duration(seconds: 10), () {
+        if (!_disposed) {
+          _seeking = false;
+        }
+      });
+      _channel.invokeMethod(FProtocol.methodSeekTo, <String, dynamic>{"msec": msec});
     }
   }
 
   /// Release native player. Release memory and resource
   Future<void> release() async {
-    await _nativeSetup.future;
+    if (_released || _disposed) return;
+    _released = true;
+
+    int pid = -1;
+    try {
+      pid = await _nativeSetup.future;
+    } catch (error) {
+      FLog.e("$this release before native setup completed: $error");
+    }
+
     _callId += 1;
     int cid = _callId;
     FLog.i("$this invoke release #$cid");
-    if (isPlayable()) await stop();
-    _setValue(value.copyWith(state: FState.end));
-    await _nativeEventSubscription?.cancel();
-    _nativeEventSubscription = null;
-    _allInstance.remove(_playerId);
-    await FPlugin._releasePlayer(_playerId).then((_) {
-      FLog.i("$this invoke release #$cid -> done");
-    });
+
+    if (pid >= 0) {
+      if (isPlayable()) {
+        try {
+          await stop();
+        } catch (error) {
+          FLog.w("$this stop before release failed: $error");
+        }
+      }
+      _setValue(value.copyWith(state: FState.end));
+      await FPlugin._releasePlayer(pid).then((_) {
+        FLog.i("$this invoke release #$cid -> done");
+      }).catchError((Object error) {
+        FLog.w("$this release native player failed: $error");
+      });
+    }
+
+    _disposeLocal();
+    super.dispose();
   }
 
   /// Set player loop count
@@ -462,7 +536,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     } else {
       FLog.i("$this invoke setLoop $loopCount");
       return _channel
-          .invokeMethod("setLoop", <String, dynamic>{"loop": loopCount});
+          .invokeMethod(FProtocol.methodSetLoop, <String, dynamic>{"loop": loopCount});
     }
   }
 
@@ -478,40 +552,46 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
           speed, "speed must be not null and greater than 0"));
     } else {
       FLog.i("$this invoke setSpeed $speed");
-      _channel.invokeMethod("setSpeed", <String, dynamic>{"speed": speed});
+      _channel.invokeMethod(FProtocol.methodSetSpeed, <String, dynamic>{"speed": speed});
     }
   }
 
   void _eventListener(dynamic event) {
+    if (_disposed) return;
     final Map<dynamic, dynamic> map = event;
     switch (map['event']) {
-      case 'prepared':
+      case FProtocol.eventPrepared:
         int duration = map['duration'] ?? 0;
         Duration dur = Duration(milliseconds: duration);
         _setValue(value.copyWith(duration: dur, prepared: true));
         FLog.i("$this prepared duration $dur");
         break;
-      case 'rotate':
+      case FProtocol.eventRotate:
         int degree = map['degree'] ?? 0;
         _setValue(value.copyWith(rotate: degree));
         FLog.i("$this rotate degree $degree");
         break;
-      case 'state_change':
-        int newStateId = map['new'] ?? 0;
-        int _oldState = map['old'] ?? 0;
-        FState fpState = FState.values[newStateId];
-        FState oldState = (_oldState >= 0 && _oldState < FState.values.length)
-            ? FState.values[_oldState]
+      case FProtocol.eventStateChange:
+        final newStateId = map['new'] is int ? map['new'] as int : -1;
+        final oldStateId = map['old'] is int ? map['old'] as int : -1;
+        if (newStateId < 0 || newStateId >= FState.values.length) {
+          FLog.w("$this ignore unknown native state: $newStateId");
+          break;
+        }
+        final fpState = FState.values[newStateId];
+        final oldState = (oldStateId >= 0 && oldStateId < FState.values.length)
+            ? FState.values[oldStateId]
             : state;
 
         if (fpState != oldState) {
           FLog.i("$this state changed to $fpState <= $oldState");
-          FException? fException =
+          final fException =
               (fpState != FState.error) ? FException.noException : null;
           if (newStateId == FState.prepared.index) {
             _setValue(value.copyWith(
                 prepared: true, state: fpState, exception: fException));
-          } else if (newStateId < FState.prepared.index) {
+          } else if (newStateId < FState.prepared.index ||
+              fpState == FState.error) {
             _setValue(value.copyWith(
                 prepared: false, state: fpState, exception: fException));
           } else {
@@ -519,7 +599,7 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
           }
         }
         break;
-      case 'rendering_start':
+      case FProtocol.eventRenderingStart:
         String type = map['type'] ?? "none";
         if (type == "video") {
           _setValue(value.copyWith(videoRenderStart: true));
@@ -529,13 +609,13 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
           FLog.i("$this audio rendering started");
         }
         break;
-      case 'freeze':
+      case FProtocol.eventFreeze:
         bool value = map['value'] ?? false;
         _buffering = value;
         _bufferStateController.add(value);
         FLog.d("$this freeze ${value ? "start" : "end"}");
         break;
-      case 'buffering':
+      case FProtocol.eventBuffering:
         int head = map['head'] ?? 0;
         int percent = map['percent'] ?? 0;
         _bufferPos = Duration(milliseconds: head);
@@ -543,21 +623,28 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
         _bufferPercent = percent;
         _bufferPercentController.add(percent);
         break;
-      case 'pos':
-        int pos = map['pos'];
-        _currentPos = Duration(milliseconds: pos);
-        if (!_seeking) {
-          _currentPosController.add(_currentPos);
+      case FProtocol.eventPos:
+        final pos = map['pos'];
+        if (pos is num) {
+          _currentPos = Duration(milliseconds: pos.toInt());
+          if (!_seeking) {
+            _currentPosController.add(_currentPos);
+          }
         }
         break;
-      case 'size_changed':
-        double width = map['width'].toDouble();
-        double height = map['height'].toDouble();
-        FLog.i("$this size changed ($width, $height)");
-        _setValue(value.copyWith(size: Size(width, height)));
+      case FProtocol.eventSizeChanged:
+        final width = map['width'];
+        final height = map['height'];
+        if (width is num && height is num) {
+          final size = Size(width.toDouble(), height.toDouble());
+          FLog.i("$this size changed ($size)");
+          _setValue(value.copyWith(size: size));
+        }
         break;
-      case 'seek_complete':
+      case FProtocol.eventSeekComplete:
         _seeking = false;
+        _seekTimeout?.cancel();
+        _seekTimeout = null;
         break;
       default:
         break;
@@ -565,10 +652,18 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
   }
 
   void _errorListener(Object obj) {
-    final PlatformException e = obj as PlatformException;
-    FException exception = FException.fromPlatformException(e);
+    if (_disposed) return;
+    if (obj is! PlatformException) {
+      FLog.e("$this errorListener: $obj");
+      _setValue(value.copyWith(
+        prepared: false,
+        exception: FException(FException.unknown, obj.toString()),
+      ));
+      return;
+    }
+    final exception = FException.fromPlatformException(obj);
     FLog.e("$this errorListener: $exception");
-    _setValue(value.copyWith(exception: exception));
+    _setValue(value.copyWith(prepared: false, exception: exception));
   }
 
   @override

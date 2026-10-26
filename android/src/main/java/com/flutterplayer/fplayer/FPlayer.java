@@ -30,7 +30,6 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Surface;
-import androidx.annotation.NonNull;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -49,19 +48,19 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
 
     final private static AtomicInteger atomicId = new AtomicInteger(0);
 
-    final private static int idle = 0;
-    final private static int initialized = 1;
-    final private static int asyncPreparing = 2;
+    final private static int idle = FPlayerProtocol.STATE_IDLE;
+    final private static int initialized = FPlayerProtocol.STATE_INITIALIZED;
+    final private static int asyncPreparing = FPlayerProtocol.STATE_ASYNC_PREPARING;
     @SuppressWarnings("unused")
-    final private static int prepared = 3;
+    final private static int prepared = FPlayerProtocol.STATE_PREPARED;
     @SuppressWarnings("unused")
-    final private static int started = 4;
-    final private static int paused = 5;
-    final private static int completed = 6;
-    final private static int stopped = 7;
+    final private static int started = FPlayerProtocol.STATE_STARTED;
+    final private static int paused = FPlayerProtocol.STATE_PAUSED;
+    final private static int completed = FPlayerProtocol.STATE_COMPLETED;
+    final private static int stopped = FPlayerProtocol.STATE_STOPPED;
     @SuppressWarnings("unused")
-    final private static int error = 8;
-    final private static int end = 9;
+    final private static int error = FPlayerProtocol.STATE_ERROR;
+    final private static int end = FPlayerProtocol.STATE_END;
 
     final private int mPlayerId;
     final private IjkMediaPlayer mIjkMediaPlayer;
@@ -84,7 +83,7 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
     private Surface mSurface;
     final private boolean mJustSurface;
 
-    FPlayer(@NonNull FEngine engine, boolean justSurface) {
+    FPlayer(FEngine engine, boolean justSurface) {
         mEngine = engine;
         mPlayerId = atomicId.incrementAndGet();
         mState = 0;
@@ -100,11 +99,11 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
             mIjkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0);
 
             // IjkMediaPlayer.native_setLogLevel(IjkMediaPlayer.IJK_LOG_INFO);
-            mMethodChannel = new MethodChannel(mEngine.messenger(), "befovy.com/fijkplayer/" + mPlayerId);
+            mMethodChannel = new MethodChannel(mEngine.messenger(), FPlayerProtocol.CHANNEL_PLAYER_PREFIX + mPlayerId);
             mMethodChannel.setMethodCallHandler(this);
             mIjkMediaPlayer.setOnSnapShotListener(this);
 
-            mEventChannel = new EventChannel(mEngine.messenger(), "befovy.com/fijkplayer/event/" + mPlayerId);
+            mEventChannel = new EventChannel(mEngine.messenger(), FPlayerProtocol.CHANNEL_PLAYER_EVENT_PREFIX + mPlayerId);
             mEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
                 @Override
                 public void onListen(Object o, EventChannel.EventSink eventSink) {
@@ -139,6 +138,9 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
             mSurfaceTextureEntry = surfaceTextureEntry;
             if (surfaceTextureEntry != null) {
                 mSurfaceTexture = surfaceTextureEntry.surfaceTexture();
+                if (mWidth > 0 && mHeight > 0) {
+                    mSurfaceTexture.setDefaultBufferSize(mWidth, mHeight);
+                }
                 mSurface = new Surface(mSurfaceTexture);
             }
             if (!mJustSurface) {
@@ -215,14 +217,14 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
 
         switch (what) {
             case PREPARED:
-                event.put("event", "prepared");
+                event.put("event", FPlayerProtocol.EVENT_PREPARED);
                 long duration = mIjkMediaPlayer.getDuration();
                 event.put("duration", duration);
                 mEventSink.success(event);
                 break;
             case PLAYBACK_STATE_CHANGED:
                 mState = arg1;
-                event.put("event", "state_change");
+                event.put("event", FPlayerProtocol.EVENT_STATE_CHANGE);
                 event.put("new", arg1);
                 event.put("old", arg2);
                 onStateChanged(arg1, arg2);
@@ -230,31 +232,31 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
                 break;
             case VIDEO_RENDERING_START:
             case AUDIO_RENDERING_START:
-                event.put("event", "rendering_start");
+                event.put("event", FPlayerProtocol.EVENT_RENDERING_START);
                 event.put("type", what == VIDEO_RENDERING_START ? "video" : "audio");
                 mEventSink.success(event);
                 break;
             case BUFFERING_START:
             case BUFFERING_END:
-                event.put("event", "freeze");
+                event.put("event", FPlayerProtocol.EVENT_FREEZE);
                 event.put("value", what == BUFFERING_START);
                 mEventSink.success(event);
                 break;
 
             // buffer / cache position
             case BUFFERING_UPDATE:
-                event.put("event", "buffering");
+                event.put("event", FPlayerProtocol.EVENT_BUFFERING);
                 event.put("head", arg1);
                 event.put("percent", arg2);
                 mEventSink.success(event);
                 break;
             case CURRENT_POSITION_UPDATE:
-                event.put("event", "pos");
+                event.put("event", FPlayerProtocol.EVENT_POS);
                 event.put("pos", arg1);
                 mEventSink.success(event);
                 break;
             case VIDEO_ROTATION_CHANGED:
-                event.put("event", "rotate");
+                event.put("event", FPlayerProtocol.EVENT_ROTATE);
                 event.put("degree", arg1);
                 mRotate = arg1;
                 mEventSink.success(event);
@@ -263,7 +265,10 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
                 }
                 break;
             case VIDEO_SIZE_CHANGED:
-                event.put("event", "size_changed");
+                if (mSurfaceTexture != null && arg1 > 0 && arg2 > 0) {
+                    mSurfaceTexture.setDefaultBufferSize(arg1, arg2);
+                }
+                event.put("event", FPlayerProtocol.EVENT_SIZE_CHANGED);
                 if (mRotate == 0 || mRotate == 180) {
                     event.put("width", arg1);
                     event.put("height", arg2);
@@ -279,7 +284,7 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
                 mHeight = arg2;
                 break;
             case SEEK_COMPLETE:
-                event.put("event", "seek_complete");
+                event.put("event", FPlayerProtocol.EVENT_SEEK_COMPLETE);
                 event.put("pos", arg1);
                 event.put("err", arg2);
                 mEventSink.success(event);
@@ -302,7 +307,7 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
         args.put("data", stream.toByteArray());
         args.put("w", w);
         args.put("h", h);
-        mMethodChannel.invokeMethod("_onSnapshot", args);
+        mMethodChannel.invokeMethod(FPlayerProtocol.METHOD_ON_SNAPSHOT, args);
     }
 
     @Override
@@ -361,12 +366,12 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
     }
 
     @Override
-    public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
+    public void onMethodCall(MethodCall call, MethodChannel.Result result) {
         //noinspection IfCanBeSwitch
-        if (call.method.equals("setupSurface")) {
+        if (call.method.equals(FPlayerProtocol.METHOD_SETUP_SURFACE)) {
             long viewId = setupSurface();
             result.success(viewId);
-        } else if (call.method.equals("setOption")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_OPTION)) {
             Integer category = call.argument("cat");
             final String key = call.argument("key");
             if (call.hasArgument("long")) {
@@ -389,10 +394,10 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
                 Log.w("FIJKPLAYER", "error arguments for setOptions");
             }
             result.success(null);
-        } else if (call.method.equals("applyOptions")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_APPLY_OPTIONS)) {
             applyOptions(call.arguments);
             result.success(null);
-        } else if (call.method.equals("setDataSource")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_DATA_SOURCE)) {
             String url = call.argument("url");
             Uri uri = Uri.parse(url);
             boolean openAsset = false;
@@ -432,52 +437,52 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
             } catch (IOException e) {
                 result.error("-1162824012", "Local IOException:" + e.getMessage(), null);
             }
-        } else if (call.method.equals("prepareAsync")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_PREPARE_ASYNC)) {
             setup();
             mIjkMediaPlayer.prepareAsync();
             handleEvent(PLAYBACK_STATE_CHANGED, asyncPreparing, -1, null);
             result.success(null);
-        } else if (call.method.equals("start")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_START)) {
             mIjkMediaPlayer.start();
             result.success(null);
-        } else if (call.method.equals("pause")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_PAUSE)) {
             mIjkMediaPlayer.pause();
             result.success(null);
-        } else if (call.method.equals("stop")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_STOP)) {
             mIjkMediaPlayer.stop();
             handleEvent(PLAYBACK_STATE_CHANGED, stopped, -1, null);
             result.success(null);
-        } else if (call.method.equals("reset")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_RESET)) {
             mIjkMediaPlayer.reset();
             handleEvent(PLAYBACK_STATE_CHANGED, idle, -1, null);
             result.success(null);
-        } else if (call.method.equals("getCurrentPosition")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_GET_CURRENT_POSITION)) {
             long pos = mIjkMediaPlayer.getCurrentPosition();
             result.success(pos);
-        } else if (call.method.equals("setVolume")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_VOLUME)) {
             final Double volume = call.argument("volume");
             float vol = volume != null ? volume.floatValue() : 1.0f;
             mIjkMediaPlayer.setVolume(vol, vol);
             result.success(null);
-        } else if (call.method.equals("seekTo")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SEEK_TO)) {
             final Integer msec = call.argument("msec");
             if (mState == completed)
                 handleEvent(PLAYBACK_STATE_CHANGED, paused, -1, null);
             mIjkMediaPlayer.seekTo(msec != null ? msec.longValue() : 0);
             result.success(null);
-        } else if (call.method.equals("setLoop")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_LOOP)) {
             final Integer loopCount = call.argument("loop");
             mIjkMediaPlayer.setLoopCount(loopCount != null ? loopCount : 1);
             result.success(null);
-        } else if (call.method.equals("setSpeed")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_SPEED)) {
             final Double speed = call.argument("speed");
             mIjkMediaPlayer.setSpeed(speed != null ? speed.floatValue() : 1.0f);
             result.success(null);
-        } else if (call.method.equals("snapshot")) {
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SNAPSHOT)) {
             if (mHostOptions.getIntOption(HostOption.ENABLE_SNAPSHOT, 0) > 0) {
                 mIjkMediaPlayer.snapShot();
             } else {
-                mMethodChannel.invokeMethod("_onSnapshot", "not support");
+                mMethodChannel.invokeMethod(FPlayerProtocol.METHOD_ON_SNAPSHOT, "not support");
             }
             result.success(null);
         } else {
