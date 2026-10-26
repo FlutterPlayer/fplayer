@@ -7,7 +7,7 @@ plugins {
 android {
     namespace 'com.flutterplayer.fplayer_example'
     compileSdk 35
-    ndkVersion "25.2.9519653"
+    ndkVersion "29.0.14206865"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
