@@ -52,7 +52,8 @@ building. The Android AAR is mirrored into `android/local-repo` and Gradle
 resolves `io.github.flutterplayer:fplayercore:<release-tag>` from that mirror or
 Maven Central. The iOS and macOS `Package.swift` files resolve the
 `fplayercore-ios` and `fplayercore-macos` Swift Packages at the same exact
-version; CocoaPods continues to use the fetched local `Frameworks` directory.
+version. The example project uses Flutter's Swift Package Manager integration
+and has no Podfile; the podspecs remain for consumers that still use CocoaPods.
 
 Release order: tag `ijkplayer` first, let its release workflow publish the
 Android, iOS, macOS and Windows assets, dispatch the OHOS job for that tag, then
