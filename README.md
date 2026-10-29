@@ -19,8 +19,8 @@ version across all platforms.
 | Platform | ijkplayer release asset | fplayer destination | Consumer |
 | --- | --- | --- | --- |
 | Android | `fplayercore-release.aar` | `android/local-repo/` | Gradle Maven mirror |
-| iOS | `fplayercore-ios.xcframework.zip` | `ios/fplayer/Frameworks/` | `Package.swift`, podspec |
-| macOS | `fplayercore-macos.xcframework.zip` | `macos/fplayer/Frameworks/` | `Package.swift` |
+| iOS | `fplayercore-ios.xcframework.zip` | `ios/fplayer/Frameworks/` | `fplayercore-ios` Swift Package; podspec |
+| macOS | `fplayercore-macos.xcframework.zip` | `macos/fplayer/Frameworks/` | `fplayercore-macos` Swift Package |
 | OpenHarmony | `fplayercore-ohos.har` | `ohos/har/` | `oh-package.json5` |
 | Windows | `fplayercore-windows.zip` | `windows/third_party/fplayercore/` | CMake |
 | Any | `fplayercore-manifest.json` | temporary | SHA-256 verification |
@@ -50,7 +50,9 @@ the latest GitHub release. `GITHUB_TOKEN` is optional and avoids API rate limits
 The fetched files are gitignored; run the fetch script after cloning and before
 building. The Android AAR is mirrored into `android/local-repo` and Gradle
 resolves `io.github.flutterplayer:fplayercore:<release-tag>` from that mirror or
-Maven Central.
+Maven Central. The iOS and macOS `Package.swift` files resolve the
+`fplayercore-ios` and `fplayercore-macos` Swift Packages at the same exact
+version; CocoaPods continues to use the fetched local `Frameworks` directory.
 
 Release order: tag `ijkplayer` first, let its release workflow publish the
 Android, iOS, macOS and Windows assets, dispatch the OHOS job for that tag, then
