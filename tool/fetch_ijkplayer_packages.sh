@@ -7,6 +7,10 @@ cd "$ROOT"
 REPO="${IJKPLAYER_REPO:-FlutterPlayer/ijkplayer}"
 VERSION="${1:-${IJKPLAYER_VERSION:-}}"
 ASSET_DIR="${IJKPLAYER_ASSET_DIR:-}"
+SKIP_ANDROID="${IJKPLAYER_SKIP_ANDROID:-0}"
+SKIP_IOS="${IJKPLAYER_SKIP_IOS:-0}"
+SKIP_MACOS="${IJKPLAYER_SKIP_MACOS:-0}"
+SKIP_OHOS="${IJKPLAYER_SKIP_OHOS:-0}"
 SKIP_WINDOWS="${IJKPLAYER_SKIP_WINDOWS:-0}"
 PYTHON="${PYTHON:-python3}"
 if ! command -v "$PYTHON" >/dev/null 2>&1; then
@@ -18,13 +22,16 @@ if [ -z "$VERSION" ] && [ -n "$ASSET_DIR" ]; then
 fi
 
 if [ -z "$VERSION" ]; then
-  AUTH=()
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    AUTH=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    VERSION="$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      "https://api.github.com/repos/${REPO}/releases/latest" \
+      | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+      | head -n 1)"
+  else
+    VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+      | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+      | head -n 1)"
   fi
-  VERSION="$(curl -fsSL "${AUTH[@]}" "https://api.github.com/repos/${REPO}/releases/latest" \
-    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
-    | head -n 1)"
 fi
 
 if [ -z "$VERSION" ]; then
@@ -35,13 +42,19 @@ fi
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-ASSETS=(
-  fplayercore-release.aar
-  fplayercore-ios.xcframework.zip
-  fplayercore-macos.xcframework.zip
-  fplayercore-ohos.har
-  fplayercore-manifest.json
-)
+ASSETS=(fplayercore-manifest.json)
+if [ "$SKIP_ANDROID" != "1" ]; then
+  ASSETS+=(fplayercore-release.aar)
+fi
+if [ "$SKIP_IOS" != "1" ]; then
+  ASSETS+=(fplayercore-ios.xcframework.zip)
+fi
+if [ "$SKIP_MACOS" != "1" ]; then
+  ASSETS+=(fplayercore-macos.xcframework.zip)
+fi
+if [ "$SKIP_OHOS" != "1" ]; then
+  ASSETS+=(fplayercore-ohos.har)
+fi
 if [ "$SKIP_WINDOWS" != "1" ]; then
   ASSETS+=(fplayercore-windows.zip)
 fi
@@ -102,15 +115,15 @@ zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])
 PY
 }
 
-mkdir -p android/local-repo ios/fplayer/Frameworks macos/fplayer/Frameworks ohos/har windows/third_party
-MAVEN_VERSION="$VERSION"
-if [ "$VERSION" = "local" ]; then
-  MAVEN_VERSION="0.0.0-local"
-fi
-MAVEN_DIR="android/local-repo/io/github/flutterplayer/fplayercore/$MAVEN_VERSION"
-mkdir -p "$MAVEN_DIR"
-cp "$TMP/fplayercore-release.aar" "$MAVEN_DIR/fplayercore-$MAVEN_VERSION.aar"
-cat > "$MAVEN_DIR/fplayercore-$MAVEN_VERSION.pom" <<POM
+if [ "$SKIP_ANDROID" != "1" ]; then
+  MAVEN_VERSION="$VERSION"
+  if [ "$VERSION" = "local" ]; then
+    MAVEN_VERSION="0.0.0-local"
+  fi
+  MAVEN_DIR="android/local-repo/io/github/flutterplayer/fplayercore/$MAVEN_VERSION"
+  mkdir -p "$MAVEN_DIR"
+  cp "$TMP/fplayercore-release.aar" "$MAVEN_DIR/fplayercore-$MAVEN_VERSION.aar"
+  cat > "$MAVEN_DIR/fplayercore-$MAVEN_VERSION.pom" <<POM
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.flutterplayer</groupId>
@@ -119,15 +132,26 @@ cat > "$MAVEN_DIR/fplayercore-$MAVEN_VERSION.pom" <<POM
   <packaging>aar</packaging>
 </project>
 POM
-printf '%s\n' "$MAVEN_VERSION" > android/fplayercore.version
-rm -f android/libs/fplayercore.jar android/libs/*.aar
-rm -rf android/src/main/jniLibs
-rm -rf ios/fplayer/Frameworks/fplayercore.xcframework
-rm -rf macos/fplayer/Frameworks/fplayercore.xcframework
-extract "$TMP/fplayercore-ios.xcframework.zip" ios/fplayer/Frameworks
-extract "$TMP/fplayercore-macos.xcframework.zip" macos/fplayer/Frameworks
-cp "$TMP/fplayercore-ohos.har" ohos/har/fplayercore-ohos.har
+  printf '%s\n' "$MAVEN_VERSION" > android/fplayercore.version
+  rm -f android/libs/fplayercore.jar android/libs/*.aar
+  rm -rf android/src/main/jniLibs
+fi
+if [ "$SKIP_IOS" != "1" ]; then
+  mkdir -p ios/fplayer/Frameworks
+  rm -rf ios/fplayer/Frameworks/fplayercore.xcframework
+  extract "$TMP/fplayercore-ios.xcframework.zip" ios/fplayer/Frameworks
+fi
+if [ "$SKIP_MACOS" != "1" ]; then
+  mkdir -p macos/fplayer/Frameworks
+  rm -rf macos/fplayer/Frameworks/fplayercore.xcframework
+  extract "$TMP/fplayercore-macos.xcframework.zip" macos/fplayer/Frameworks
+fi
+if [ "$SKIP_OHOS" != "1" ]; then
+  mkdir -p ohos/har
+  cp "$TMP/fplayercore-ohos.har" ohos/har/fplayercore-ohos.har
+fi
 if [ "$SKIP_WINDOWS" != "1" ]; then
+  mkdir -p windows/third_party
   rm -rf windows/third_party/ijkplayer windows/third_party/fplayercore
   extract "$TMP/fplayercore-windows.zip" windows/third_party
 fi
