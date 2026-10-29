@@ -71,6 +71,8 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+      - name: Enable Swift Package Manager
+        run: flutter config --enable-swift-package-manager
       - name: Fetch ijkplayer packages
         env:
           IJKPLAYER_SKIP_ANDROID: '1'
