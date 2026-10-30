@@ -19,8 +19,8 @@ version across all platforms.
 | Platform | ijkplayer release asset | fplayer destination | Consumer |
 | --- | --- | --- | --- |
 | Android | `fplayercore-release.aar` | `android/local-repo/` | Gradle Maven mirror |
-| iOS | `fplayercore-ios.xcframework.zip` | `ios/fplayer/Frameworks/` | `fplayercore-ios` Swift Package; podspec |
-| macOS | `fplayercore-macos.xcframework.zip` | `macos/fplayer/Frameworks/` | `fplayercore-macos` Swift Package |
+| iOS | `fplayercore-ios.xcframework.zip` | `ios/fplayer/Frameworks/` | SwiftPM `binaryTarget`; podspec |
+| macOS | `fplayercore-macos.xcframework.zip` | `macos/fplayer/Frameworks/` | SwiftPM `binaryTarget`; podspec |
 | OpenHarmony | `fplayercore-ohos.har` | `ohos/har/` | `oh-package.json5` |
 | Windows | `fplayercore-windows.zip` | `windows/third_party/fplayercore/` | CMake |
 | Any | `fplayercore-manifest.json` | temporary | SHA-256 verification |
@@ -50,17 +50,14 @@ the latest GitHub release. `GITHUB_TOKEN` is optional and avoids API rate limits
 The fetched files are gitignored; run the fetch script after cloning and before
 building. The Android AAR is mirrored into `android/local-repo` and Gradle
 resolves `io.github.flutterplayer:fplayercore:<release-tag>` from that mirror or
-Maven Central. The iOS and macOS `Package.swift` files resolve the
-`fplayercore-ios` and `fplayercore-macos` Swift Packages at the same exact
-version. The example project uses Flutter's Swift Package Manager integration
-and has no Podfile; the podspecs remain for consumers that still use CocoaPods.
+Maven Central. The iOS and macOS `Package.swift` files add the published
+xcframework zip as a SwiftPM `binaryTarget(url:checksum:)` directly from the
+official `FlutterPlayer/ijkplayer` GitHub Release. No separate SPM wrapper
+repository is required. The example project uses Flutter's Swift Package Manager
+integration and has no Podfile; the podspecs remain for consumers that still use
+CocoaPods.
 
-The Swift Packages are:
-
-- iOS: https://github.com/FlutterPlayer/fplayercore-ios
-- macOS: https://github.com/FlutterPlayer/fplayercore-macos
-
-Both currently resolve the `1.2.12` kernel.
+Both fplayer platform manifests currently reference the `1.2.12` kernel assets.
 
 Release order: tag `ijkplayer` first; its release workflow publishes Android,
 iOS, macOS, Windows and OpenHarmony assets in one run. Then fetch that tag here.
