@@ -556,6 +556,34 @@ class FPlayer extends ChangeNotifier implements ValueListenable<FValue> {
     }
   }
 
+  /// Get the audio tracks of the current media source.
+  ///
+  /// Returns an empty list before the player is prepared or when the media has
+  /// no audio stream.
+  Future<List<FAudioTrack>> getAudioTracks() async {
+    await _nativeSetup.future;
+    final raw = await _channel
+        .invokeMethod<List<dynamic>>(FProtocol.methodGetAudioTracks);
+    if (raw == null) return const <FAudioTrack>[];
+    return raw
+        .whereType<Map<dynamic, dynamic>>()
+        .map(FAudioTrack.fromMap)
+        .where((track) => track.index >= 0)
+        .toList(growable: false);
+  }
+
+  /// Select an audio track returned by [getAudioTracks].
+  Future<void> setAudioTrack(FAudioTrack track) async {
+    if (track.index < 0) {
+      return Future.error(
+          ArgumentError.value(track.index, "track.index must be >= 0"));
+    }
+    await _nativeSetup.future;
+    FLog.i("$this invoke setAudioTrack ${track.index}");
+    await _channel.invokeMethod(FProtocol.methodSetAudioTrack,
+        <String, dynamic>{"index": track.index});
+  }
+
   void _eventListener(dynamic event) {
     if (_disposed) return;
     final Map<dynamic, dynamic> map = event;

@@ -55,9 +55,16 @@ Maven Central. The iOS and macOS `Package.swift` files resolve the
 version. The example project uses Flutter's Swift Package Manager integration
 and has no Podfile; the podspecs remain for consumers that still use CocoaPods.
 
-Release order: tag `ijkplayer` first, let its release workflow publish the
-Android, iOS, macOS and Windows assets, dispatch the OHOS job for that tag, then
-fetch that tag here. The `fplayer` CI workflow follows the same rule.
+The Swift Packages are:
+
+- iOS: https://github.com/FlutterPlayer/fplayercore-ios
+- macOS: https://github.com/FlutterPlayer/fplayercore-macos
+
+Both currently resolve the `1.2.12` kernel.
+
+Release order: tag `ijkplayer` first; its release workflow publishes Android,
+iOS, macOS, Windows and OpenHarmony assets in one run. Then fetch that tag here.
+The `fplayer` CI workflow follows the same rule.
 
 ## Install
 
@@ -91,6 +98,7 @@ dependencies:
 
 cd example
 flutter pub get
+flutter config --enable-swift-package-manager
 flutter build apk --debug
 flutter build ios --simulator --no-codesign
 flutter build macos --debug
@@ -107,7 +115,7 @@ for their platform.
 
 - `dart`: `tool/ci.sh` on Ubuntu.
 - `android`: fetch the ijkplayer AAR into the local Maven mirror and build the example APK.
-- `apple`: fetch the xcframeworks, build the iOS simulator app and the macOS app.
+- `apple`: enable Swift Package Manager, fetch the xcframeworks, build the iOS simulator app and the macOS app through the SPM packages.
 - `windows`: fetch the Windows zip and build the Windows app.
 - `ohos`: manual `workflow_dispatch` on a `[self-hosted, ohos]` runner with the
   OpenHarmony Flutter SDK and DevEco toolchain.
@@ -119,6 +127,18 @@ A manual run can pin `ijkplayer_version` and opt into the OHOS job.
 See [example/lib/video_page.dart](example/lib/video_page.dart) for a complete
 player page: `FPlayer`, `FView`, options, seek, fullscreen and the optional
 `fplayer_ui` panel.
+
+Audio tracks are available after the player is prepared:
+
+```dart
+final tracks = await player.getAudioTracks();
+for (final track in tracks) {
+  print('${track.index} ${track.language} ${track.codec} ${track.selected}');
+}
+if (tracks.isNotEmpty) {
+  await player.setAudioTrack(tracks.first);
+}
+```
 
 The iOS simulator is supported by the rebuilt arm64 kernel. The podspec excludes
 `i386`/`x86_64` simulator slices; use an Apple Silicon simulator or a device.

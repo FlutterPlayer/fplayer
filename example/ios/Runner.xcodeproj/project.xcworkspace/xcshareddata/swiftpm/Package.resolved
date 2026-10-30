@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "fplayercore-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/FlutterPlayer/fplayercore-ios.git",
+      "state" : {
+        "revision" : "41a4507c5d5d247ad15818911ee4ec3844113a1c",
+        "version" : "1.2.12"
+      }
+    }
+  ],
+  "version" : 2
+}

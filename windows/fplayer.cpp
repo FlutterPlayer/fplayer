@@ -475,6 +475,42 @@ void FPlayer::HandleMethodCall(
   } else if (method == fplayer_protocol::kMethodSnapshot) {
     TakeSnapshot();
     result->Success();
+  } else if (method == fplayer_protocol::kMethodGetAudioTracks) {
+    flutter::EncodableList tracks;
+    const int count = ijkff_get_track_info_count(player_);
+    for (int i = 0; i < count; ++i) {
+      IjkFFTrackInfo info{};
+      if (ijkff_get_track_info(player_, i, &info) != 0 ||
+          info.type != IJK_TRACK_TYPE_AUDIO) {
+        continue;
+      }
+      flutter::EncodableMap track;
+      track[flutter::EncodableValue("index")] =
+          flutter::EncodableValue(info.index);
+      track[flutter::EncodableValue("language")] =
+          flutter::EncodableValue(std::string(info.language));
+      track[flutter::EncodableValue("codec")] =
+          flutter::EncodableValue(std::string(info.codec));
+      track[flutter::EncodableValue("codec_long_name")] =
+          flutter::EncodableValue(std::string(info.codec_long_name));
+      track[flutter::EncodableValue("sample_rate")] =
+          flutter::EncodableValue(info.sample_rate);
+      track[flutter::EncodableValue("channel_layout")] =
+          flutter::EncodableValue(info.channel_layout);
+      track[flutter::EncodableValue("selected")] =
+          flutter::EncodableValue(info.selected != 0);
+      tracks.push_back(flutter::EncodableValue(std::move(track)));
+    }
+    result->Success(flutter::EncodableValue(std::move(tracks)));
+  } else if (method == fplayer_protocol::kMethodSetAudioTrack) {
+    const int64_t index =
+        arguments == nullptr ? -1 : IntValue(FindValue(*arguments, "index"));
+    if (index < 0) {
+      result->Error("ArgumentError", "invalid audio track index");
+      return;
+    }
+    ijkff_set_stream_selected(player_, static_cast<int>(index), true);
+    result->Success();
   } else {
     result->NotImplemented();
   }

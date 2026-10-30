@@ -37,10 +37,14 @@ import io.flutter.view.TextureRegistry;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkEventListener;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
+import tv.danmaku.ijk.media.player.IjkMediaMeta;
+import tv.danmaku.ijk.media.player.misc.ITrackInfo;
 import tv.danmaku.ijk.media.player.misc.IMediaDataSource;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -485,6 +489,36 @@ public class FPlayer implements MethodChannel.MethodCallHandler, IjkEventListene
                 mMethodChannel.invokeMethod(FPlayerProtocol.METHOD_ON_SNAPSHOT, "not support");
             }
             result.success(null);
+        } else if (call.method.equals(FPlayerProtocol.METHOD_GET_AUDIO_TRACKS)) {
+            final List<Map<String, Object>> tracks = new ArrayList<>();
+            final IjkMediaMeta meta = IjkMediaMeta.parse(mIjkMediaPlayer.getMediaMeta());
+            if (meta != null) {
+                final int selected = mIjkMediaPlayer.getSelectedTrack(ITrackInfo.MEDIA_TRACK_TYPE_AUDIO);
+                for (IjkMediaMeta.IjkStreamMeta stream : meta.mStreams) {
+                    if (stream == null ||
+                            !IjkMediaMeta.IJKM_VAL_TYPE__AUDIO.equalsIgnoreCase(stream.mType)) {
+                        continue;
+                    }
+                    final Map<String, Object> track = new HashMap<>();
+                    track.put("index", stream.mIndex);
+                    track.put("language", stream.mLanguage);
+                    track.put("codec", stream.mCodecName);
+                    track.put("codec_long_name", stream.mCodecLongName);
+                    track.put("sample_rate", stream.mSampleRate);
+                    track.put("channel_layout", stream.mChannelLayout);
+                    track.put("selected", stream.mIndex == selected);
+                    tracks.add(track);
+                }
+            }
+            result.success(tracks);
+        } else if (call.method.equals(FPlayerProtocol.METHOD_SET_AUDIO_TRACK)) {
+            final Integer index = call.argument("index");
+            if (index == null || index < 0) {
+                result.error("ArgumentError", "invalid audio track index", null);
+            } else {
+                mIjkMediaPlayer.selectTrack(index);
+                result.success(null);
+            }
         } else {
             result.notImplemented();
         }

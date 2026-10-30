@@ -603,6 +603,24 @@ static int renderType = 0;
     } else if ([FPLAYER_METHOD_SNAPSHOT isEqualToString:call.method]) {
         [self takeSnapshot];
         result(nil);
+    } else if ([FPLAYER_METHOD_GET_AUDIO_TRACKS isEqualToString:call.method]) {
+        NSArray<NSDictionary<NSString *, id> *> *allTracks = [_ijkMediaPlayer getTrackInfo];
+        NSMutableArray<NSDictionary<NSString *, id> *> *audioTracks = [NSMutableArray array];
+        for (NSDictionary<NSString *, id> *track in allTracks) {
+            if ([@"audio" isEqualToString:track[@"type"]])
+                [audioTracks addObject:track];
+        }
+        result(audioTracks);
+    } else if ([FPLAYER_METHOD_SET_AUDIO_TRACK isEqualToString:call.method]) {
+        NSNumber *indexValue = argsMap[@"index"];
+        if (indexValue == nil || [indexValue intValue] < 0) {
+            result([FlutterError errorWithCode:@"ArgumentError"
+                                       message:@"invalid audio track index"
+                                       details:nil]);
+        } else {
+            [_ijkMediaPlayer setStreamSelected:[indexValue intValue] selected:YES];
+            result(nil);
+        }
     } else {
         result(FlutterMethodNotImplemented);
     }

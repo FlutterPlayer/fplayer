@@ -50,6 +50,8 @@ public final class FPlayerProtocol {
     public static final String METHOD_SET_LOOP = "setLoop";
     public static final String METHOD_SET_SPEED = "setSpeed";
     public static final String METHOD_SNAPSHOT = "snapshot";
+    public static final String METHOD_GET_AUDIO_TRACKS = "getAudioTracks";
+    public static final String METHOD_SET_AUDIO_TRACK = "setAudioTrack";
     public static final String METHOD_ON_SNAPSHOT = "_onSnapshot";
     public static final String EVENT_PREPARED = "prepared";
     public static final String EVENT_STATE_CHANGE = "state_change";

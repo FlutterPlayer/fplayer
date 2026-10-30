@@ -48,6 +48,8 @@
       "setLoop": "setLoop",
       "setSpeed": "setSpeed",
       "snapshot": "snapshot",
+      "getAudioTracks": "getAudioTracks",
+      "setAudioTrack": "setAudioTrack",
       "onSnapshot": "_onSnapshot"
     }
   },

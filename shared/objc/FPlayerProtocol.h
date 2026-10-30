@@ -50,6 +50,8 @@
 #define FPLAYER_METHOD_SET_LOOP @"setLoop"
 #define FPLAYER_METHOD_SET_SPEED @"setSpeed"
 #define FPLAYER_METHOD_SNAPSHOT @"snapshot"
+#define FPLAYER_METHOD_GET_AUDIO_TRACKS @"getAudioTracks"
+#define FPLAYER_METHOD_SET_AUDIO_TRACK @"setAudioTrack"
 #define FPLAYER_METHOD_ON_SNAPSHOT @"_onSnapshot"
 #define FPLAYER_EVENT_PREPARED @"prepared"
 #define FPLAYER_EVENT_STATE_CHANGE @"state_change"

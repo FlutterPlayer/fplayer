@@ -1,5 +1,6 @@
 ## 1.3.0
 
+- Add audio track discovery and selection on Android, iOS, macOS, Windows and OpenHarmony.
 - Add macOS playback support with texture rendering.
 - Upgrade iOS/macOS to the FFmpeg 8 ijkplayer kernel.
 - Use an arm64 simulator slice for the iOS kernel (no x86_64 simulator).

@@ -219,6 +219,34 @@ export class FPlayer implements MethodCallHandler, StreamHandler, PlayerMessageC
       case "snapshot":
         result.notImplemented();
         break;
+      case "getAudioTracks":
+        const allTracks = this.player?.getTrackInfo();
+        const audioTracks: Array<HashMap<string, ESObject>> = [];
+        if (allTracks !== undefined) {
+          for (const track of allTracks) {
+            if (track.type !== 'audio') {
+              continue;
+            }
+            const item: HashMap<string, ESObject> = new HashMap();
+            item.set('index', track.index);
+            item.set('language', track.language);
+            item.set('codec', track.codec);
+            item.set('codec_long_name', track.codec_long_name);
+            item.set('sample_rate', track.sample_rate);
+            item.set('channel_layout', track.channel_layout);
+            item.set('selected', track.selected);
+            audioTracks.push(item);
+          }
+        }
+        result.success(audioTracks);
+        break;
+      case "setAudioTrack":
+        const trackIndex: number = call.argument('index');
+        if (trackIndex !== undefined && trackIndex >= 0) {
+          this.player?.selectTrack(trackIndex, true);
+        }
+        result.success(null);
+        break;
 
     }
   }

@@ -23,6 +23,7 @@ class _FakePlatform {
 
   late final TestDefaultBinaryMessenger _messenger;
   MockStreamHandlerEventSink? events;
+  Object? Function(MethodCall call)? onPlayerCall;
 
   _FakePlatform() {
     _messenger =
@@ -35,7 +36,7 @@ class _FakePlatform {
     _messenger.setMockMethodCallHandler(_playerChannel, (MethodCall call) async {
       playerCalls.add(call);
       _playerCallController.add(call);
-      return null;
+      return onPlayerCall?.call(call);
     });
     _messenger.setMockStreamHandler(
       _eventChannel,
@@ -206,6 +207,47 @@ void main() {
       expect(player.value.duration, Duration.zero);
       expect(player.value.fullScreen, isTrue);
       expect(_platform.hasCall(FProtocol.methodReset), isTrue);
+    });
+  });
+
+  group('audio tracks', () {
+    test('parses native tracks and selects one by index', () async {
+      final player = await _platform.createPlayer();
+      _platform.onPlayerCall = (MethodCall call) {
+        if (call.method == FProtocol.methodGetAudioTracks) {
+          return <Object?>[
+            <String, Object?>{
+              'index': 2,
+              'language': 'eng',
+              'codec': 'aac',
+              'codec_long_name': 'AAC (Advanced Audio Coding)',
+              'sample_rate': 48000,
+              'channel_layout': 3,
+              'selected': true,
+            },
+          ];
+        }
+        return null;
+      };
+
+      final tracks = await player.getAudioTracks();
+
+      expect(tracks, hasLength(1));
+      expect(tracks.single.index, 2);
+      expect(tracks.single.language, 'eng');
+      expect(tracks.single.selected, isTrue);
+
+      await player.setAudioTrack(tracks.single);
+
+      final call = _platform.lastCall(FProtocol.methodSetAudioTrack);
+      expect(call.arguments, <String, dynamic>{'index': 2});
+    });
+
+    test('returns an empty list when native has no tracks', () async {
+      final player = await _platform.createPlayer();
+      _platform.onPlayerCall = (MethodCall call) => null;
+
+      expect(await player.getAudioTracks(), isEmpty);
     });
   });
 

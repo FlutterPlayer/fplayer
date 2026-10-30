@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 part 'core/f_default_panel.dart';
+part 'core/f_audio_track.dart';
 part 'core/f_log.dart';
 part 'core/f_protocol.dart';
 part 'core/f_option.dart';

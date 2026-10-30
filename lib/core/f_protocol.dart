@@ -56,6 +56,8 @@ class FProtocol {
   static const String methodSetLoop = 'setLoop';
   static const String methodSetSpeed = 'setSpeed';
   static const String methodSnapshot = 'snapshot';
+  static const String methodGetAudioTracks = 'getAudioTracks';
+  static const String methodSetAudioTrack = 'setAudioTrack';
   static const String methodOnSnapshot = '_onSnapshot';
   static const String eventPrepared = 'prepared';
   static const String eventStateChange = 'state_change';
